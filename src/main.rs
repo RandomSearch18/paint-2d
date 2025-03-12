@@ -1,4 +1,11 @@
-use crossterm::{ExecutableCommand, cursor, terminal};
+use std::time::Duration;
+
+use crossterm::{
+    ExecutableCommand, cursor,
+    event::{self, Event},
+    style::Print,
+    terminal,
+};
 
 /// All the state and main methods for the TUI program
 struct Paint2D {
@@ -13,14 +20,30 @@ impl Paint2D {
     }
 
     fn setup(&mut self) -> std::io::Result<()> {
-        self.stdout.execute(terminal::EnterAlternateScreen)?;
-        self.stdout.execute(cursor::Hide)?;
         terminal::enable_raw_mode()?;
+        self.stdout.execute(terminal::EnterAlternateScreen)?;
+        // Hide the cursor as much as we can
+        self.stdout
+            .execute(cursor::SetCursorStyle::SteadyUnderScore)?;
+        self.stdout.execute(cursor::MoveTo(0, 0))?;
+        self.stdout.execute(cursor::Hide)?;
+        self.stdout.execute(Print("A"))?;
         Ok(())
     }
 
     fn run(&mut self) -> std::io::Result<()> {
-        loop {}
+        'main_loop: loop {
+            while event::poll(Duration::from_millis(50))? {
+                match event::read()? {
+                    Event::Key(key) => match key.code {
+                        event::KeyCode::Char('q') => break 'main_loop,
+                        _ => {}
+                    },
+                    _ => {}
+                }
+            }
+        }
+        Ok(())
     }
 }
 
@@ -29,6 +52,9 @@ impl Drop for Paint2D {
         let _ = terminal::disable_raw_mode();
         let _ = self.stdout.execute(cursor::Show);
         let _ = self.stdout.execute(terminal::LeaveAlternateScreen);
+        let _ = self
+            .stdout
+            .execute(cursor::SetCursorStyle::DefaultUserShape);
     }
 }
 
