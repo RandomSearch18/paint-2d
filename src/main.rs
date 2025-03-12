@@ -1,4 +1,10 @@
-use std::time::Duration;
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
 
 use crossterm::{
     ExecutableCommand, cursor,
@@ -32,11 +38,24 @@ impl Paint2D {
     }
 
     fn run(&mut self) -> std::io::Result<()> {
-        'main_loop: loop {
+        let running = Arc::new(AtomicBool::new(true));
+
+        let is_running = running.clone();
+        ctrlc::set_handler({
+            move || {
+                print!("AAH");
+                is_running.store(false, Ordering::SeqCst);
+            }
+        })
+        .expect("Ctrl+C handler did not initialise correctly");
+
+        while running.load(Ordering::SeqCst) {
             while event::poll(Duration::from_millis(50))? {
                 match event::read()? {
                     Event::Key(key) => match key.code {
-                        event::KeyCode::Char('q') => break 'main_loop,
+                        event::KeyCode::Char('q') => {
+                            running.store(false, Ordering::SeqCst);
+                        }
                         _ => {}
                     },
                     _ => {}
