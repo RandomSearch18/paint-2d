@@ -14,22 +14,52 @@ use crossterm::{
     terminal,
 };
 
+struct PaintCursor<'a> {
+    row: u16,
+    col: u16,
+    screen_rows: &'a u16,
+    screen_cols: &'a u16,
+}
+
+impl<'a> PaintCursor<'a> {
+    fn new(row: u16, col: u16, screen_size: &'a (u16, u16)) -> Self {
+        PaintCursor {
+            row,
+            col,
+            screen_cols: &screen_size.0,
+            screen_rows: &screen_size.1,
+        }
+    }
+
+    fn left(&mut self) {
+        if self.row > 0 {
+            self.row -= 1;
+        }
+    }
+
+    fn right(&mut self) {
+        if self.row < self.screen_cols - 1 {
+            self.row += 1;
+        }
+    }
+}
+
 /// All the state and main methods for the TUI program
-struct Paint2D {
+struct Paint2D<'a> {
     stdout: std::io::Stdout,
     running: Arc<AtomicBool>,
-    cursor: (u16, u16),
+    cursor: PaintCursor<'a>,
     /// `(height, width)` i.e. (cols, rows)
     screen_size: (u16, u16),
 }
 
-impl Paint2D {
-    fn new() -> Self {
+impl<'a> Paint2D<'a> {
+    fn new(screen_size: &'a (u16, u16)) -> Self {
         Paint2D {
             stdout: std::io::stdout(),
             running: Arc::new(AtomicBool::new(true)),
-            cursor: (0, 0),
-            screen_size: terminal::size().unwrap_or((80, 24)),
+            cursor: PaintCursor::new(0, 0, screen_size),
+            screen_size: (1, 1),
         }
     }
 
@@ -66,10 +96,8 @@ impl Paint2D {
     }
 
     fn draw_cursor(&mut self) -> std::io::Result<()> {
-        let (cursor_row, cursor_col) = self.cursor;
-        // let cursor_to =
         self.stdout
-            .execute(cursor::MoveTo(cursor_row, cursor_col))?;
+            .execute(cursor::MoveTo(self.cursor.row, self.cursor.col))?;
         self.stdout.execute(Print("X"))?;
         Ok(())
     }
@@ -81,6 +109,12 @@ impl Paint2D {
                     Event::Key(key) => match key.code {
                         event::KeyCode::Char('q') => {
                             self.running.store(false, Ordering::SeqCst);
+                        }
+                        event::KeyCode::Left => {
+                            self.cursor.left();
+                        }
+                        event::KeyCode::Right => {
+                            self.cursor.right();
                         }
                         _ => {}
                     },
@@ -97,7 +131,7 @@ impl Paint2D {
     }
 }
 
-impl Drop for Paint2D {
+impl<'a> Drop for Paint2D<'a> {
     fn drop(&mut self) {
         let _ = terminal::disable_raw_mode();
         let _ = self.stdout.execute(cursor::Show);
@@ -109,7 +143,8 @@ impl Drop for Paint2D {
 }
 
 fn main() -> std::io::Result<()> {
-    let mut app = Paint2D::new();
+    let terminal_size: (u16, u16) = terminal::size().unwrap_or((1, 1));
+    let mut app = Paint2D::new(&terminal_size);
     app.setup()?;
     app.run()?;
     Ok(())
