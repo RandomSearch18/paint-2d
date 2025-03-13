@@ -18,6 +18,9 @@ use crossterm::{
 struct Paint2D {
     stdout: std::io::Stdout,
     running: Arc<AtomicBool>,
+    cursor: (u16, u16),
+    /// `(height, width)` i.e. (cols, rows)
+    screen_size: (u16, u16),
 }
 
 impl Paint2D {
@@ -25,6 +28,8 @@ impl Paint2D {
         Paint2D {
             stdout: std::io::stdout(),
             running: Arc::new(AtomicBool::new(true)),
+            cursor: (0, 0),
+            screen_size: terminal::size().unwrap_or((80, 24)),
         }
     }
 
@@ -60,9 +65,17 @@ impl Paint2D {
         Ok(())
     }
 
+    fn draw_cursor(&mut self) -> std::io::Result<()> {
+        let (cursor_row, cursor_col) = self.cursor;
+        // let cursor_to =
+        self.stdout
+            .execute(cursor::MoveTo(cursor_row, cursor_col))?;
+        self.stdout.execute(Print("X"))?;
+        Ok(())
+    }
+
     fn run(&mut self) -> std::io::Result<()> {
         while self.running.load(Ordering::SeqCst) {
-            self.stdout.flush()?;
             while event::poll(Duration::from_millis(50))? {
                 match event::read()? {
                     Event::Key(key) => match key.code {
@@ -71,9 +84,14 @@ impl Paint2D {
                         }
                         _ => {}
                     },
+                    Event::Resize(cols, rows) => {
+                        self.screen_size = (cols, rows);
+                    }
                     _ => {}
                 }
             }
+            self.draw_cursor()?;
+            self.stdout.flush()?;
         }
         Ok(())
     }
