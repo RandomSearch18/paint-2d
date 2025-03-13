@@ -57,16 +57,11 @@ impl Paint2D {
             .execute(cursor::SetCursorStyle::SteadyUnderScore)?;
         self.stdout.execute(cursor::MoveTo(0, 0))?;
         self.stdout.execute(cursor::Hide)?;
-        self.stdout.execute(Print("A"))?;
         Ok(())
     }
 
     fn run(&mut self) -> std::io::Result<()> {
         while self.running.load(Ordering::SeqCst) {
-            print!("L");
-            if !self.running.load(Ordering::SeqCst) {
-                print!("X");
-            }
             self.stdout.flush()?;
             while event::poll(Duration::from_millis(50))? {
                 match event::read()? {
