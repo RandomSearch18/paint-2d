@@ -35,7 +35,7 @@ impl Paint2D {
         std::thread::spawn(move || -> std::io::Result<()> {
             loop {
                 // 100 ms timeout is CPU-friendly, apparently
-                if event::poll(std::time::Duration::from_millis(100))? {
+                if event::poll(std::time::Duration::from_millis(45))? {
                     if let Event::Key(key_event) = event::read()? {
                         if key_event.code == KeyCode::Char('c')
                             && key_event
@@ -64,6 +64,9 @@ impl Paint2D {
     fn run(&mut self) -> std::io::Result<()> {
         while self.running.load(Ordering::SeqCst) {
             print!("L");
+            if !self.running.load(Ordering::SeqCst) {
+                print!("X");
+            }
             self.stdout.flush()?;
             while event::poll(Duration::from_millis(50))? {
                 match event::read()? {
