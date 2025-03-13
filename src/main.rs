@@ -1,4 +1,5 @@
 use std::{
+    io::Write,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -8,7 +9,7 @@ use std::{
 
 use crossterm::{
     ExecutableCommand, cursor,
-    event::{self, Event},
+    event::{self, Event, KeyCode},
     style::Print,
     terminal,
 };
@@ -29,12 +30,25 @@ impl Paint2D {
 
     fn setup(&mut self) -> std::io::Result<()> {
         let is_running = self.running.clone();
-        ctrlc::set_handler({
-            move || {
-                is_running.store(false, Ordering::SeqCst);
+        // We use a separate thread to handle Ctrl+C, just in case the main thread is blocked
+        // Credit: Ken Salter, https://github.com/plecos/ctrlc-crossterm, original code MIT-licensed
+        std::thread::spawn(move || -> std::io::Result<()> {
+            loop {
+                // 100 ms timeout is CPU-friendly, apparently
+                if event::poll(std::time::Duration::from_millis(100))? {
+                    if let Event::Key(key_event) = event::read()? {
+                        if key_event.code == KeyCode::Char('c')
+                            && key_event
+                                .modifiers
+                                .contains(crossterm::event::KeyModifiers::CONTROL)
+                        {
+                            print!("Ctrl+C pressed, exiting...\r\n");
+                            is_running.store(false, Ordering::SeqCst);
+                        }
+                    }
+                }
             }
-        })
-        .expect("Ctrl+C handler did not initialise correctly");
+        });
 
         terminal::enable_raw_mode()?;
         self.stdout.execute(terminal::EnterAlternateScreen)?;
@@ -49,6 +63,8 @@ impl Paint2D {
 
     fn run(&mut self) -> std::io::Result<()> {
         while self.running.load(Ordering::SeqCst) {
+            print!("L");
+            self.stdout.flush()?;
             while event::poll(Duration::from_millis(50))? {
                 match event::read()? {
                     Event::Key(key) => match key.code {
