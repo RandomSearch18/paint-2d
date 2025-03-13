@@ -16,16 +16,26 @@ use crossterm::{
 /// All the state and main methods for the TUI program
 struct Paint2D {
     stdout: std::io::Stdout,
+    running: Arc<AtomicBool>,
 }
 
 impl Paint2D {
     fn new() -> Self {
         Paint2D {
             stdout: std::io::stdout(),
+            running: Arc::new(AtomicBool::new(true)),
         }
     }
 
     fn setup(&mut self) -> std::io::Result<()> {
+        let is_running = self.running.clone();
+        ctrlc::set_handler({
+            move || {
+                is_running.store(false, Ordering::SeqCst);
+            }
+        })
+        .expect("Ctrl+C handler did not initialise correctly");
+
         terminal::enable_raw_mode()?;
         self.stdout.execute(terminal::EnterAlternateScreen)?;
         // Hide the cursor as much as we can
@@ -38,23 +48,12 @@ impl Paint2D {
     }
 
     fn run(&mut self) -> std::io::Result<()> {
-        let running = Arc::new(AtomicBool::new(true));
-
-        let is_running = running.clone();
-        ctrlc::set_handler({
-            move || {
-                print!("AAH");
-                is_running.store(false, Ordering::SeqCst);
-            }
-        })
-        .expect("Ctrl+C handler did not initialise correctly");
-
-        while running.load(Ordering::SeqCst) {
+        while self.running.load(Ordering::SeqCst) {
             while event::poll(Duration::from_millis(50))? {
                 match event::read()? {
                     Event::Key(key) => match key.code {
                         event::KeyCode::Char('q') => {
-                            running.store(false, Ordering::SeqCst);
+                            self.running.store(false, Ordering::SeqCst);
                         }
                         _ => {}
                     },
