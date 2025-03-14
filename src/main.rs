@@ -31,24 +31,26 @@ impl<'a> PaintCursor<'a> {
         }
     }
 
-    fn left(&mut self) {
-        if self.row > 0 {
-            self.row -= 1;
+    fn left(&mut self, by: u16) {
+        if self.row >= by {
+            self.row -= by;
         } else {
-            self.row = self.screen_cols - 1;
+            let underflow = by - self.row;
+            self.row = self.screen_cols - underflow;
         }
     }
 
-    fn right(&mut self) {
-        if self.row < self.screen_cols - 1 {
-            self.row += 1;
+    fn right(&mut self, by: u16) {
+        if self.row < self.screen_cols - by {
+            self.row += by;
         } else {
-            self.row = 0;
+            let overflow = by - (self.screen_cols - self.row);
+            self.row = 0 + overflow;
         }
     }
 
     fn up(&mut self, by: u16) {
-        if self.col > by {
+        if self.col >= by {
             self.col -= by;
         } else {
             let underflow = by - self.col;
@@ -61,7 +63,7 @@ impl<'a> PaintCursor<'a> {
             self.col += by;
         } else {
             let overflow = by - (self.screen_rows - self.col);
-            self.col = overflow;
+            self.col = 0 + overflow;
         }
     }
 }
@@ -125,16 +127,24 @@ impl<'a> Paint2D<'a> {
                             }
                         }
                         event::KeyCode::Left => {
-                            self.cursor.left();
+                            let is_fast = key.modifiers.contains(event::KeyModifiers::CONTROL);
+                            let movement = if is_fast { 8 } else { 1 };
+                            self.cursor.left(movement);
                         }
                         event::KeyCode::Right => {
-                            self.cursor.right();
+                            let is_fast = key.modifiers.contains(event::KeyModifiers::CONTROL);
+                            let movement = if is_fast { 8 } else { 1 };
+                            self.cursor.right(movement);
                         }
                         event::KeyCode::Up => {
-                            self.cursor.up(1);
+                            let is_fast = key.modifiers.contains(event::KeyModifiers::CONTROL);
+                            let movement = if is_fast { 2 } else { 1 };
+                            self.cursor.up(movement);
                         }
                         event::KeyCode::Down => {
-                            self.cursor.down(1);
+                            let is_fast = key.modifiers.contains(event::KeyModifiers::CONTROL);
+                            let movement = if is_fast { 2 } else { 1 };
+                            self.cursor.down(movement);
                         }
                         _ => {}
                     },
