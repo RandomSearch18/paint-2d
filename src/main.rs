@@ -64,27 +64,6 @@ impl<'a> Paint2D<'a> {
     }
 
     fn setup(&mut self) -> std::io::Result<()> {
-        let is_running = self.running.clone();
-        // We use a separate thread to handle Ctrl+C, just in case the main thread is blocked
-        // Credit: Ken Salter, https://github.com/plecos/ctrlc-crossterm, original code MIT-licensed
-        std::thread::spawn(move || -> std::io::Result<()> {
-            loop {
-                // 100 ms timeout is CPU-friendly, apparently
-                if event::poll(std::time::Duration::from_millis(45))? {
-                    if let Event::Key(key_event) = event::read()? {
-                        if key_event.code == KeyCode::Char('c')
-                            && key_event
-                                .modifiers
-                                .contains(crossterm::event::KeyModifiers::CONTROL)
-                        {
-                            print!("Ctrl+C pressed, exiting...\r\n");
-                            is_running.store(false, Ordering::SeqCst);
-                        }
-                    }
-                }
-            }
-        });
-
         terminal::enable_raw_mode()?;
         self.stdout.execute(terminal::EnterAlternateScreen)?;
         // Hide the cursor as much as we can
@@ -116,6 +95,12 @@ impl<'a> Paint2D<'a> {
                     Event::Key(key) => match key.code {
                         event::KeyCode::Char('q') => {
                             self.running.store(false, Ordering::SeqCst);
+                        }
+                        event::KeyCode::Char('c') => {
+                            if key.modifiers.contains(event::KeyModifiers::CONTROL) {
+                                // Ctrl+C has been pressed
+                                self.running.store(false, Ordering::SeqCst);
+                            }
                         }
                         event::KeyCode::Left => {
                             self.cursor.left();
