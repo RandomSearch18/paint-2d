@@ -102,6 +102,13 @@ impl<'a> Paint2D<'a> {
         Ok(())
     }
 
+    fn redraw_screen(&mut self) -> std::io::Result<()> {
+        self.stdout
+            .execute(terminal::Clear(terminal::ClearType::All))?;
+        self.draw_cursor()?;
+        Ok(())
+    }
+
     fn run(&mut self) -> std::io::Result<()> {
         while self.running.load(Ordering::SeqCst) {
             while event::poll(Duration::from_millis(50))? {
@@ -124,7 +131,7 @@ impl<'a> Paint2D<'a> {
                     _ => {}
                 }
             }
-            self.draw_cursor()?;
+            self.redraw_screen()?;
             self.stdout.flush()?;
         }
         Ok(())
