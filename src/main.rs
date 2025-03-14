@@ -46,6 +46,24 @@ impl<'a> PaintCursor<'a> {
             self.row = 0;
         }
     }
+
+    fn up(&mut self, by: u16) {
+        if self.col > by {
+            self.col -= by;
+        } else {
+            let underflow = by - self.col;
+            self.col = self.screen_rows - underflow;
+        }
+    }
+
+    fn down(&mut self, by: u16) {
+        if self.col < self.screen_rows - by {
+            self.col += by;
+        } else {
+            let overflow = by - (self.screen_rows - self.col);
+            self.col = overflow;
+        }
+    }
 }
 
 /// All the state and main methods for the TUI program
@@ -111,6 +129,12 @@ impl<'a> Paint2D<'a> {
                         }
                         event::KeyCode::Right => {
                             self.cursor.right();
+                        }
+                        event::KeyCode::Up => {
+                            self.cursor.up(1);
+                        }
+                        event::KeyCode::Down => {
+                            self.cursor.down(1);
                         }
                         _ => {}
                     },
