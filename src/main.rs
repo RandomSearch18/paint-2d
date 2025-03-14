@@ -9,7 +9,7 @@ use std::{
 
 use crossterm::{
     ExecutableCommand, cursor,
-    event::{self, Event, KeyCode},
+    event::{self, Event},
     style::Print,
     terminal,
 };
@@ -34,12 +34,16 @@ impl<'a> PaintCursor<'a> {
     fn left(&mut self) {
         if self.row > 0 {
             self.row -= 1;
+        } else {
+            self.row = self.screen_cols - 1;
         }
     }
 
     fn right(&mut self) {
         if self.row < self.screen_cols - 1 {
             self.row += 1;
+        } else {
+            self.row = 0;
         }
     }
 }
