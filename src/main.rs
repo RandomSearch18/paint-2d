@@ -10,7 +10,8 @@ use std::{
 use crossterm::{
     ExecutableCommand, cursor,
     event::{self, Event},
-    style::Print,
+    execute,
+    style::{Color, Print, ResetColor, SetForegroundColor},
     terminal,
 };
 
@@ -99,9 +100,20 @@ impl<'a> Paint2D<'a> {
     }
 
     fn draw_cursor(&mut self) -> std::io::Result<()> {
-        self.stdout
-            .execute(cursor::MoveTo(self.cursor.row, self.cursor.col))?;
-        self.stdout.execute(Print("X"))?;
+        // How many extra characters to the left are printed as part of the cursor
+        let offset = 1;
+        let row: i32 = (self.cursor.row as i32 - offset).into();
+        execute!(
+            self.stdout,
+            cursor::MoveTo(row.try_into().unwrap_or(0), self.cursor.col),
+            SetForegroundColor(Color::DarkGrey),
+            Print('├'),
+            ResetColor,
+            Print("X"),
+            SetForegroundColor(Color::DarkGrey),
+            Print('┤'),
+            ResetColor,
+        )?;
         Ok(())
     }
 
