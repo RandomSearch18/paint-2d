@@ -15,20 +15,20 @@ use crossterm::{
     terminal,
 };
 
-struct PaintCursor<'a> {
+struct PaintCursor {
     row: u16,
     col: u16,
-    screen_rows: &'a u16,
-    screen_cols: &'a u16,
+    screen_rows: u16,
+    screen_cols: u16,
 }
 
-impl<'a> PaintCursor<'a> {
-    fn new(row: u16, col: u16, screen_size: &'a (u16, u16)) -> Self {
+impl PaintCursor {
+    fn new(row: u16, col: u16, screen_size: (u16, u16)) -> Self {
         PaintCursor {
             row,
             col,
-            screen_cols: &screen_size.0,
-            screen_rows: &screen_size.1,
+            screen_cols: screen_size.0,
+            screen_rows: screen_size.1,
         }
     }
 
@@ -67,24 +67,30 @@ impl<'a> PaintCursor<'a> {
             self.col = 0 + overflow;
         }
     }
+
+    fn set_canvas_size(&mut self, size: &(u16, u16)) {
+        self.screen_cols = size.0;
+        self.screen_rows = size.1;
+    }
 }
 
 /// All the state and main methods for the TUI program
-struct Paint2D<'a> {
+struct Paint2D {
     stdout: std::io::Stdout,
     running: Arc<AtomicBool>,
-    cursor: PaintCursor<'a>,
+    cursor: PaintCursor,
     /// `(height, width)` i.e. (cols, rows)
-    screen_size: (u16, u16),
+    terminal_size: (u16, u16),
 }
 
-impl<'a> Paint2D<'a> {
-    fn new(screen_size: &'a (u16, u16)) -> Self {
+impl Paint2D {
+    fn new(terminal_size: &(u16, u16)) -> Self {
+        let canvas_size = (terminal_size.0, terminal_size.1 - 1);
         Paint2D {
             stdout: std::io::stdout(),
             running: Arc::new(AtomicBool::new(true)),
-            cursor: PaintCursor::new(0, 0, screen_size),
-            screen_size: (1, 1),
+            cursor: PaintCursor::new(0, 0, canvas_size),
+            terminal_size: terminal_size.clone(),
         }
     }
 
@@ -161,7 +167,8 @@ impl<'a> Paint2D<'a> {
                         _ => {}
                     },
                     Event::Resize(cols, rows) => {
-                        self.screen_size = (cols, rows);
+                        self.terminal_size = (cols, rows);
+                        self.cursor.set_canvas_size(&(cols, rows - 1));
                     }
                     _ => {}
                 }
@@ -173,7 +180,7 @@ impl<'a> Paint2D<'a> {
     }
 }
 
-impl<'a> Drop for Paint2D<'a> {
+impl Drop for Paint2D {
     fn drop(&mut self) {
         let _ = terminal::disable_raw_mode();
         let _ = self.stdout.execute(cursor::Show);
