@@ -12,7 +12,7 @@ use crossterm::{
     event::{self, Event},
     execute,
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
-    terminal,
+    terminal::{self, Clear, ClearType},
 };
 
 struct PaintCursor {
@@ -111,14 +111,7 @@ impl Paint2D {
         Ok(())
     }
 
-    fn redraw_cursor(&mut self) -> std::io::Result<()> {
-        // Remove the old cursor
-        for (col, row) in self.cursor_pixels.iter() {
-            self.stdout.execute(cursor::MoveTo(*col, *row))?;
-            self.stdout.execute(Print(" "))?;
-        }
-        self.cursor_pixels.clear();
-
+    fn draw_cursor(&mut self) -> std::io::Result<()> {
         // How many extra characters to the left are printed as part of the cursor
         let offset = 1;
         let row: i32 = (self.cursor.row as i32 - offset).into();
@@ -127,22 +120,17 @@ impl Paint2D {
             cursor::MoveTo(row.try_into().unwrap_or(0), self.cursor.col),
             SetForegroundColor(Color::DarkGrey),
             Print('├'),
-            ResetColor,
-            Print("X"),
+            SetForegroundColor(Color::White),
+            cursor::MoveRight(1),
             SetForegroundColor(Color::DarkGrey),
             Print('┤'),
-            ResetColor,
+            SetForegroundColor(Color::White),
         )?;
-        for i in -offset..=offset {
-            let col = row + i;
-            if col >= 0 && col < self.terminal_size.0.into() {
-                self.cursor_pixels.push((col as u16, self.cursor.col));
-            }
-        }
         Ok(())
     }
 
     fn redraw_screen(&mut self) -> std::io::Result<()> {
+        self.stdout.execute(Clear(ClearType::All))?;
         self.stdout.execute(cursor::MoveTo(0, 0))?;
         for r in 0..self.terminal_size.1 - 1 {
             self.stdout.execute(cursor::MoveTo(0, r))?;
@@ -165,7 +153,7 @@ impl Paint2D {
                 }
             }
         }
-        self.redraw_cursor()?;
+        self.draw_cursor()?;
         Ok(())
     }
 
@@ -187,26 +175,31 @@ impl Paint2D {
                             let is_fast = key.modifiers.contains(event::KeyModifiers::CONTROL);
                             let movement = if is_fast { 8 } else { 1 };
                             self.cursor.left(movement);
+                            self.redraw_screen()?;
                         }
                         event::KeyCode::Right => {
                             let is_fast = key.modifiers.contains(event::KeyModifiers::CONTROL);
                             let movement = if is_fast { 8 } else { 1 };
                             self.cursor.right(movement);
+                            self.redraw_screen()?;
                         }
                         event::KeyCode::Up => {
                             let is_fast = key.modifiers.contains(event::KeyModifiers::CONTROL);
                             let movement = if is_fast { 2 } else { 1 };
                             self.cursor.up(movement);
+                            self.redraw_screen()?;
                         }
                         event::KeyCode::Down => {
                             let is_fast = key.modifiers.contains(event::KeyModifiers::CONTROL);
                             let movement = if is_fast { 2 } else { 1 };
                             self.cursor.down(movement);
+                            self.redraw_screen()?;
                         }
                         event::KeyCode::Char(' ') => {
                             let row = self.cursor.row as usize;
                             let col = self.cursor.col as usize;
                             self.color_canvas[col][row] = Some(self.cursor.color);
+                            self.redraw_screen()?;
                         }
                         _ => {}
                     },
@@ -217,7 +210,6 @@ impl Paint2D {
                     _ => {}
                 }
             }
-            self.redraw_screen()?;
             self.stdout.flush()?;
         }
         Ok(())
