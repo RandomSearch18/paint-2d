@@ -132,8 +132,8 @@ impl Paint2D {
             .execute(terminal::Clear(terminal::ClearType::All))?;
         self.stdout.execute(cursor::MoveTo(0, 0))?;
         for r in 0..self.terminal_size.1 - 1 {
+            self.stdout.execute(cursor::MoveTo(0, r))?;
             for c in 0..self.terminal_size.0 {
-                self.stdout.execute(cursor::MoveTo(c, r))?;
                 // None if the access is out of bounds, or if the colour is transparent
                 let color = self
                     .color_canvas
@@ -146,6 +146,9 @@ impl Paint2D {
                     self.stdout.execute(SetBackgroundColor(color))?;
                     self.stdout.execute(Print(" "))?;
                     self.stdout.execute(ResetColor)?;
+                } else {
+                    // self.stdout.execute(cursor::MoveRight(1))?;
+                    self.stdout.execute(Print(" "))?;
                 }
             }
         }
