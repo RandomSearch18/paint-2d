@@ -84,7 +84,6 @@ struct Paint2D {
     /// `(height, width)` i.e. (cols, rows)
     terminal_size: (u16, u16),
     color_canvas: Vec<Vec<Option<Color>>>,
-    cursor_pixels: Vec<(u16, u16)>,
 }
 
 impl Paint2D {
@@ -96,7 +95,6 @@ impl Paint2D {
             cursor: PaintCursor::new(0, 0, canvas_size),
             terminal_size: terminal_size.clone(),
             color_canvas: vec![vec![None; canvas_size.0.into()]; canvas_size.1.into()],
-            cursor_pixels: vec![],
         }
     }
 
