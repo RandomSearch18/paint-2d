@@ -84,6 +84,7 @@ struct Paint2D {
     /// `(height, width)` i.e. (cols, rows)
     terminal_size: (u16, u16),
     color_canvas: Vec<Vec<Option<Color>>>,
+    cursor_pixels: Vec<(u16, u16)>,
 }
 
 impl Paint2D {
@@ -95,6 +96,7 @@ impl Paint2D {
             cursor: PaintCursor::new(0, 0, canvas_size),
             terminal_size: terminal_size.clone(),
             color_canvas: vec![vec![None; canvas_size.0.into()]; canvas_size.1.into()],
+            cursor_pixels: vec![],
         }
     }
 
@@ -109,7 +111,14 @@ impl Paint2D {
         Ok(())
     }
 
-    fn draw_cursor(&mut self) -> std::io::Result<()> {
+    fn redraw_cursor(&mut self) -> std::io::Result<()> {
+        // Remove the old cursor
+        for (col, row) in self.cursor_pixels.iter() {
+            self.stdout.execute(cursor::MoveTo(*col, *row))?;
+            self.stdout.execute(Print(" "))?;
+        }
+        self.cursor_pixels.clear();
+
         // How many extra characters to the left are printed as part of the cursor
         let offset = 1;
         let row: i32 = (self.cursor.row as i32 - offset).into();
@@ -124,12 +133,16 @@ impl Paint2D {
             Print('┤'),
             ResetColor,
         )?;
+        for i in -offset..=offset {
+            let col = row + i;
+            if col >= 0 && col < self.terminal_size.0.into() {
+                self.cursor_pixels.push((col as u16, self.cursor.col));
+            }
+        }
         Ok(())
     }
 
     fn redraw_screen(&mut self) -> std::io::Result<()> {
-        self.stdout
-            .execute(terminal::Clear(terminal::ClearType::All))?;
         self.stdout.execute(cursor::MoveTo(0, 0))?;
         for r in 0..self.terminal_size.1 - 1 {
             self.stdout.execute(cursor::MoveTo(0, r))?;
@@ -147,12 +160,12 @@ impl Paint2D {
                     self.stdout.execute(Print(" "))?;
                     self.stdout.execute(ResetColor)?;
                 } else {
-                    // self.stdout.execute(cursor::MoveRight(1))?;
-                    self.stdout.execute(Print(" "))?;
+                    self.stdout.execute(cursor::MoveRight(1))?;
+                    // self.stdout.execute(Print(" "))?;
                 }
             }
         }
-        self.draw_cursor()?;
+        self.redraw_cursor()?;
         Ok(())
     }
 
@@ -215,7 +228,7 @@ impl Drop for Paint2D {
     fn drop(&mut self) {
         let _ = terminal::disable_raw_mode();
         let _ = self.stdout.execute(cursor::Show);
-        // let _ = self.stdout.execute(terminal::LeaveAlternateScreen);
+        let _ = self.stdout.execute(terminal::LeaveAlternateScreen);
         let _ = self
             .stdout
             .execute(cursor::SetCursorStyle::DefaultUserShape);
