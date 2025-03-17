@@ -35,38 +35,38 @@ impl PaintCursor {
     }
 
     fn left(&mut self, by: u16) {
-        if self.row >= by {
-            self.row -= by;
-        } else {
-            let underflow = by - self.row;
-            self.row = self.screen_cols - underflow;
-        }
-    }
-
-    fn right(&mut self, by: u16) {
-        if self.row < self.screen_cols - by {
-            self.row += by;
-        } else {
-            let overflow = by - (self.screen_cols - self.row);
-            self.row = 0 + overflow;
-        }
-    }
-
-    fn up(&mut self, by: u16) {
         if self.col >= by {
             self.col -= by;
         } else {
             let underflow = by - self.col;
-            self.col = self.screen_rows - underflow;
+            self.col = self.screen_cols - underflow;
+        }
+    }
+
+    fn right(&mut self, by: u16) {
+        if self.col < self.screen_cols - by {
+            self.col += by;
+        } else {
+            let overflow = by - (self.screen_cols - self.col);
+            self.col = 0 + overflow;
+        }
+    }
+
+    fn up(&mut self, by: u16) {
+        if self.row >= by {
+            self.row -= by;
+        } else {
+            let underflow = by - self.row;
+            self.row = self.screen_rows - underflow;
         }
     }
 
     fn down(&mut self, by: u16) {
-        if self.col < self.screen_rows - by {
-            self.col += by;
+        if self.row < self.screen_rows - by {
+            self.row += by;
         } else {
-            let overflow = by - (self.screen_rows - self.col);
-            self.col = 0 + overflow;
+            let overflow = by - (self.screen_rows - self.row);
+            self.row = 0 + overflow;
         }
     }
 
@@ -114,10 +114,15 @@ impl Paint2D {
     fn draw_cursor(&mut self) -> std::io::Result<()> {
         // How many extra characters to the left are printed as part of the cursor
         let offset = 1;
-        let row: i32 = (self.cursor.row as i32 - offset).into();
+        let col: i32 = (self.cursor.col as i32 - offset).into();
+        // let our_row = self
+        //     .color_canvas
+        //     .get(self.cursor.col as usize)
+        //     .unwrap_or(&self.color_canvas[0]);
+        // // let our_color = our_row.get(self.cursor.row as usize).unwrap_or
         execute!(
             self.stdout,
-            cursor::MoveTo(row.try_into().unwrap_or(0), self.cursor.col),
+            cursor::MoveTo(col.try_into().unwrap_or(0), self.cursor.row),
             SetForegroundColor(Color::DarkGrey),
             Print('├'),
             SetForegroundColor(Color::White),
@@ -158,6 +163,7 @@ impl Paint2D {
     }
 
     fn run(&mut self) -> std::io::Result<()> {
+        self.redraw_screen()?;
         while self.running.load(Ordering::SeqCst) {
             while event::poll(Duration::from_millis(50))? {
                 match event::read()? {
@@ -196,8 +202,8 @@ impl Paint2D {
                             self.redraw_screen()?;
                         }
                         event::KeyCode::Char(' ') => {
-                            let row = self.cursor.row as usize;
-                            let col = self.cursor.col as usize;
+                            let row = self.cursor.col as usize;
+                            let col = self.cursor.row as usize;
                             self.color_canvas[col][row] = Some(self.cursor.color);
                             self.redraw_screen()?;
                         }
