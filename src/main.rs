@@ -11,7 +11,7 @@ use crossterm::{
     ExecutableCommand, cursor,
     event::{self, Event},
     execute,
-    style::{Color, Print, ResetColor, SetForegroundColor},
+    style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal,
 };
 
@@ -20,6 +20,7 @@ struct PaintCursor {
     col: u16,
     screen_rows: u16,
     screen_cols: u16,
+    color: Color,
 }
 
 impl PaintCursor {
@@ -29,6 +30,7 @@ impl PaintCursor {
             col,
             screen_cols: screen_size.0,
             screen_rows: screen_size.1,
+            color: Color::White,
         }
     }
 
@@ -81,6 +83,7 @@ struct Paint2D {
     cursor: PaintCursor,
     /// `(height, width)` i.e. (cols, rows)
     terminal_size: (u16, u16),
+    color_canvas: Vec<Vec<Option<Color>>>,
 }
 
 impl Paint2D {
@@ -91,6 +94,7 @@ impl Paint2D {
             running: Arc::new(AtomicBool::new(true)),
             cursor: PaintCursor::new(0, 0, canvas_size),
             terminal_size: terminal_size.clone(),
+            color_canvas: vec![vec![None; canvas_size.0.into()]; canvas_size.1.into()],
         }
     }
 
@@ -126,6 +130,25 @@ impl Paint2D {
     fn redraw_screen(&mut self) -> std::io::Result<()> {
         self.stdout
             .execute(terminal::Clear(terminal::ClearType::All))?;
+        self.stdout.execute(cursor::MoveTo(0, 0))?;
+        for r in 0..self.terminal_size.1 - 1 {
+            for c in 0..self.terminal_size.0 {
+                self.stdout.execute(cursor::MoveTo(c, r))?;
+                // None if the access is out of bounds, or if the colour is transparent
+                let color = self
+                    .color_canvas
+                    .get(r as usize)
+                    .and_then(|row| row.get(c as usize))
+                    .copied()
+                    .flatten();
+
+                if let Some(color) = color {
+                    self.stdout.execute(SetBackgroundColor(color))?;
+                    self.stdout.execute(Print(" "))?;
+                    self.stdout.execute(ResetColor)?;
+                }
+            }
+        }
         self.draw_cursor()?;
         Ok(())
     }
@@ -164,6 +187,11 @@ impl Paint2D {
                             let movement = if is_fast { 2 } else { 1 };
                             self.cursor.down(movement);
                         }
+                        event::KeyCode::Char(' ') => {
+                            let row = self.cursor.row as usize;
+                            let col = self.cursor.col as usize;
+                            self.color_canvas[col][row] = Some(self.cursor.color);
+                        }
                         _ => {}
                     },
                     Event::Resize(cols, rows) => {
@@ -184,7 +212,7 @@ impl Drop for Paint2D {
     fn drop(&mut self) {
         let _ = terminal::disable_raw_mode();
         let _ = self.stdout.execute(cursor::Show);
-        let _ = self.stdout.execute(terminal::LeaveAlternateScreen);
+        // let _ = self.stdout.execute(terminal::LeaveAlternateScreen);
         let _ = self
             .stdout
             .execute(cursor::SetCursorStyle::DefaultUserShape);
