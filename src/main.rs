@@ -8,7 +8,8 @@ use std::{
 };
 
 use crossterm::{
-    ExecutableCommand, cursor,
+    ExecutableCommand,
+    cursor::{self, MoveTo},
     event::{self, Event},
     execute,
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
@@ -110,25 +111,37 @@ impl Paint2D {
     }
 
     fn draw_cursor(&mut self) -> std::io::Result<()> {
-        // How many extra characters to the left are printed as part of the cursor
-        let offset = 1;
-        let col: i32 = (self.cursor.col as i32 - offset).into();
-        // let our_row = self
-        //     .color_canvas
-        //     .get(self.cursor.col as usize)
-        //     .unwrap_or(&self.color_canvas[0]);
-        // // let our_color = our_row.get(self.cursor.row as usize).unwrap_or
-        execute!(
-            self.stdout,
-            cursor::MoveTo(col.try_into().unwrap_or(0), self.cursor.row),
-            SetForegroundColor(Color::DarkGrey),
-            Print('├'),
-            SetForegroundColor(Color::White),
-            cursor::MoveRight(1),
-            SetForegroundColor(Color::DarkGrey),
-            Print('┤'),
-            SetForegroundColor(Color::White),
-        )?;
+        const CHARS: [char; 3] = ['├', ' ', '┤'];
+        let offset: u32 = (CHARS.len() / 2).try_into().unwrap();
+        for (i, char) in CHARS.iter().enumerate() {
+            // The next few lines are pure Rust pain
+            // I just want to subtract two numbers and get a negative number >:(
+            let i: i32 = i.try_into().unwrap();
+            let relative_pos: i32 = i - TryInto::<i32>::try_into(offset).unwrap();
+            let cursor_col: i32 = self.cursor.col.into();
+            let current_col: i32 = cursor_col + relative_pos;
+            // Back to relative sanity
+            let current_col: u16 = match current_col.try_into() {
+                Ok(col) => col,
+                // If this errors, it's probably a negative value (therefore off the screen)
+                // so we won't draw it
+                Err(_) => continue,
+            };
+            let color = self
+                .color_canvas
+                .get(self.cursor.row as usize)
+                .and_then(|row| row.get(current_col as usize))
+                .copied()
+                .flatten();
+            self.stdout.execute(MoveTo(current_col, self.cursor.row))?;
+            if let Some(color) = color {
+                self.stdout.execute(SetBackgroundColor(color))?;
+                self.stdout.execute(Print(char))?;
+                self.stdout.execute(ResetColor)?;
+            } else {
+                self.stdout.execute(Print(char))?;
+            }
+        }
         Ok(())
     }
 
