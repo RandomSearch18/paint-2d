@@ -113,6 +113,7 @@ impl Paint2D {
     fn draw_cursor(&mut self) -> std::io::Result<()> {
         const CHARS: [char; 3] = ['┣', 'ˣ', '┫'];
         let offset: u32 = (CHARS.len() / 2).try_into().unwrap();
+        self.stdout.execute(SetForegroundColor(self.cursor.color))?;
         for (i, char) in CHARS.iter().enumerate() {
             // The next few lines are pure Rust pain
             // I just want to subtract two numbers and get a negative number >:(
@@ -142,6 +143,19 @@ impl Paint2D {
                 self.stdout.execute(Print(char))?;
             }
         }
+        self.stdout.execute(SetForegroundColor(Color::White))?;
+        Ok(())
+    }
+
+    fn draw_bottom_bar(&mut self) -> std::io::Result<()> {
+        self.stdout.execute(MoveTo(0, self.terminal_size.1 - 1))?;
+        self.stdout.execute(SetForegroundColor(Color::Black))?;
+        self.stdout.execute(SetBackgroundColor(Color::White))?;
+        write!(
+            self.stdout,
+            "Arrow keys: move, Space: paint, Number keys: change color, q: quit"
+        )?;
+        self.stdout.execute(ResetColor)?;
         Ok(())
     }
 
@@ -162,7 +176,7 @@ impl Paint2D {
                 if let Some(color) = color {
                     self.stdout.execute(SetBackgroundColor(color))?;
                     self.stdout.execute(Print(" "))?;
-                    self.stdout.execute(ResetColor)?;
+                    self.stdout.execute(SetBackgroundColor(Color::Black))?;
                 } else {
                     self.stdout.execute(cursor::MoveRight(1))?;
                     // self.stdout.execute(Print(" "))?;
@@ -170,6 +184,7 @@ impl Paint2D {
             }
         }
         self.draw_cursor()?;
+        self.draw_bottom_bar()?;
         Ok(())
     }
 
@@ -226,6 +241,20 @@ impl Paint2D {
                                 let row = self.cursor.col as usize;
                                 let col = self.cursor.row as usize;
                                 self.color_canvas[col][row] = Some(self.cursor.color);
+                                self.redraw_screen()?;
+                            }
+                            event::KeyCode::Char(char) => {
+                                self.cursor.color = match char {
+                                    '1' => Color::White,
+                                    '2' => Color::Red,
+                                    '3' => Color::Green,
+                                    '4' => Color::Yellow,
+                                    '5' => Color::Blue,
+                                    '6' => Color::Magenta,
+                                    '7' => Color::Cyan,
+                                    '8' => Color::Grey,
+                                    _ => self.cursor.color,
+                                };
                                 self.redraw_screen()?;
                             }
                             _ => {}
