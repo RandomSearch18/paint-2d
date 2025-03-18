@@ -93,7 +93,7 @@ impl Paint2D {
         Paint2D {
             stdout: std::io::stdout(),
             running: Arc::new(AtomicBool::new(true)),
-            cursor: PaintCursor::new(0, 0, canvas_size),
+            cursor: PaintCursor::new(0, 1, canvas_size),
             terminal_size: terminal_size.clone(),
             color_canvas: vec![vec![None; canvas_size.0.into()]; canvas_size.1.into()],
         }
@@ -111,7 +111,7 @@ impl Paint2D {
     }
 
     fn draw_cursor(&mut self) -> std::io::Result<()> {
-        const CHARS: [char; 3] = ['├', ' ', '┤'];
+        const CHARS: [char; 3] = ['┣', 'ˣ', '┫'];
         let offset: u32 = (CHARS.len() / 2).try_into().unwrap();
         for (i, char) in CHARS.iter().enumerate() {
             // The next few lines are pure Rust pain
@@ -178,48 +178,59 @@ impl Paint2D {
         while self.running.load(Ordering::SeqCst) {
             while event::poll(Duration::from_millis(50))? {
                 match event::read()? {
-                    Event::Key(key) => match key.code {
-                        event::KeyCode::Char('q') => {
-                            self.running.store(false, Ordering::SeqCst);
-                        }
-                        event::KeyCode::Char('c') => {
-                            if key.modifiers.contains(event::KeyModifiers::CONTROL) {
-                                // Ctrl+C has been pressed
+                    Event::Key(key) => {
+                        let is_speedy = key.modifiers.contains(event::KeyModifiers::CONTROL);
+                        let is_super_speedy =
+                            is_speedy && key.modifiers.contains(event::KeyModifiers::ALT);
+                        let horizontal_movement = if is_super_speedy {
+                            20
+                        } else if is_speedy {
+                            8
+                        } else {
+                            1
+                        };
+                        let vertical_movement = if is_super_speedy {
+                            8
+                        } else if is_speedy {
+                            2
+                        } else {
+                            1
+                        };
+                        match key.code {
+                            event::KeyCode::Char('q') => {
                                 self.running.store(false, Ordering::SeqCst);
                             }
+                            event::KeyCode::Char('c') => {
+                                if key.modifiers.contains(event::KeyModifiers::CONTROL) {
+                                    // Ctrl+C has been pressed
+                                    self.running.store(false, Ordering::SeqCst);
+                                }
+                            }
+                            event::KeyCode::Left => {
+                                self.cursor.left(horizontal_movement);
+                                self.redraw_screen()?;
+                            }
+                            event::KeyCode::Right => {
+                                self.cursor.right(horizontal_movement);
+                                self.redraw_screen()?;
+                            }
+                            event::KeyCode::Up => {
+                                self.cursor.up(vertical_movement);
+                                self.redraw_screen()?;
+                            }
+                            event::KeyCode::Down => {
+                                self.cursor.down(vertical_movement);
+                                self.redraw_screen()?;
+                            }
+                            event::KeyCode::Char(' ') => {
+                                let row = self.cursor.col as usize;
+                                let col = self.cursor.row as usize;
+                                self.color_canvas[col][row] = Some(self.cursor.color);
+                                self.redraw_screen()?;
+                            }
+                            _ => {}
                         }
-                        event::KeyCode::Left => {
-                            let is_fast = key.modifiers.contains(event::KeyModifiers::CONTROL);
-                            let movement = if is_fast { 8 } else { 1 };
-                            self.cursor.left(movement);
-                            self.redraw_screen()?;
-                        }
-                        event::KeyCode::Right => {
-                            let is_fast = key.modifiers.contains(event::KeyModifiers::CONTROL);
-                            let movement = if is_fast { 8 } else { 1 };
-                            self.cursor.right(movement);
-                            self.redraw_screen()?;
-                        }
-                        event::KeyCode::Up => {
-                            let is_fast = key.modifiers.contains(event::KeyModifiers::CONTROL);
-                            let movement = if is_fast { 2 } else { 1 };
-                            self.cursor.up(movement);
-                            self.redraw_screen()?;
-                        }
-                        event::KeyCode::Down => {
-                            let is_fast = key.modifiers.contains(event::KeyModifiers::CONTROL);
-                            let movement = if is_fast { 2 } else { 1 };
-                            self.cursor.down(movement);
-                            self.redraw_screen()?;
-                        }
-                        event::KeyCode::Char(' ') => {
-                            let row = self.cursor.col as usize;
-                            let col = self.cursor.row as usize;
-                            self.color_canvas[col][row] = Some(self.cursor.color);
-                            self.redraw_screen()?;
-                        }
-                        _ => {}
-                    },
+                    }
                     Event::Resize(cols, rows) => {
                         self.terminal_size = (cols, rows);
                         self.cursor.set_canvas_size(&(cols, rows - 1));
