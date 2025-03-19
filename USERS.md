@@ -54,4 +54,6 @@ James ran the v0.1.0 (the latest release version at the time) on Windows 10 and 
 
 We tested version 0.2.0 before publishing it on my development PC running Arch Linux with the Kitty terminal emulator.
 
+![Photo of Karolina using the program](images/Karolina_1.png)
+
 ![Screenshot of the art created by Karolina](images/Art_made_by_Karolina.png)
