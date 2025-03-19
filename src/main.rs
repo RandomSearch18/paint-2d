@@ -100,7 +100,8 @@ impl ColorKey {
     }
 }
 
-static COLOUR_KEYS: [ColorKey; 8] = [
+static COLOUR_KEYS: [ColorKey; 9] = [
+    ColorKey::new('0', Color::Reset, "Eraser"),
     ColorKey::new('1', Color::White, "White"),
     ColorKey::new('2', Color::Red, "Red"),
     ColorKey::new('3', Color::Green, "Green"),
