@@ -19,18 +19,18 @@ use phf::phf_map;
 struct PaintCursor {
     row: u16,
     col: u16,
-    screen_rows: u16,
-    screen_cols: u16,
+    canvas_rows: u16,
+    canvas_cols: u16,
     color: Color,
 }
 
 impl PaintCursor {
-    fn new(row: u16, col: u16, screen_size: (u16, u16)) -> Self {
+    fn new(row: u16, col: u16, canvas_size: (u16, u16)) -> Self {
         PaintCursor {
             row,
             col,
-            screen_cols: screen_size.0,
-            screen_rows: screen_size.1,
+            canvas_cols: canvas_size.0,
+            canvas_rows: canvas_size.1,
             color: Color::White,
         }
     }
@@ -40,15 +40,15 @@ impl PaintCursor {
             self.col -= by;
         } else {
             let underflow = by - self.col;
-            self.col = self.screen_cols - underflow;
+            self.col = self.canvas_cols - underflow;
         }
     }
 
     fn right(&mut self, by: u16) {
-        if self.col < self.screen_cols - by {
+        if self.col < self.canvas_cols - by {
             self.col += by;
         } else {
-            let overflow = by - (self.screen_cols - self.col);
+            let overflow = by - (self.canvas_cols - self.col);
             self.col = 0 + overflow;
         }
     }
@@ -58,22 +58,22 @@ impl PaintCursor {
             self.row -= by;
         } else {
             let underflow = by - self.row;
-            self.row = self.screen_rows - underflow;
+            self.row = self.canvas_rows - underflow;
         }
     }
 
     fn down(&mut self, by: u16) {
-        if self.row < self.screen_rows - by {
+        if self.row < self.canvas_rows - by {
             self.row += by;
         } else {
-            let overflow = by - (self.screen_rows - self.row);
+            let overflow = by - (self.canvas_rows - self.row);
             self.row = 0 + overflow;
         }
     }
 
     fn set_canvas_size(&mut self, size: &(u16, u16)) {
-        self.screen_cols = size.0;
-        self.screen_rows = size.1;
+        self.canvas_cols = size.0;
+        self.canvas_rows = size.1;
     }
 }
 
@@ -185,7 +185,7 @@ impl Paint2D {
     fn redraw_screen(&mut self) -> std::io::Result<()> {
         self.stdout.execute(Clear(ClearType::All))?;
         self.stdout.execute(cursor::MoveTo(0, 0))?;
-        for r in 0..self.terminal_size.1 - 1 {
+        for r in 0..self.terminal_size.1 - BOTTOM_BAR_HEIGHT {
             self.stdout.execute(cursor::MoveTo(0, r))?;
             for c in 0..self.terminal_size.0 {
                 // None if the access is out of bounds, or if the colour is transparent
