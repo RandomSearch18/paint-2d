@@ -33,6 +33,9 @@ jobs:
           - os-name: macOS aarch64 (Apple silicon)
             runs-on: macOS-latest
             target: aarch64-apple-darwin
+          - os-name: Android aarch64
+            runs-on: ubuntu-24.04
+            target: aarch64-linux-android
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - name: Checkout
