@@ -23,5 +23,6 @@ Here's a list of terminals that Paint 2D has been tested in. Please test the app
 
 ### Windows
 
+- ✅ Default Windows console
 - ❌ WINE console
   - Doesn't seem to support ANSI escape codes
