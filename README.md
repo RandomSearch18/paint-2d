@@ -12,7 +12,9 @@ If you have issues, there is an alternate download link for [Paint 2D v0.1.0 for
 
 ## Run
 
-Running the executable file (`paint-2d.exe` or `./paint-2d`) will open a terminal window, from which you can start drawing. You will see an indicator for where your paintbrush is in the top-left corner. The following keyboard actions are available:
+Running the executable file (`paint-2d.exe` or `./paint-2d`) will open a terminal window, from which you can start drawing. If you're using macOS, you have to right-click the file and select **Open** from the context menu, to bypass Apple's restriction on running unsigned apps.
+
+You will see an indicator for where your paintbrush is in the top-left corner. The following keyboard actions are available:
 
 - Arrow keys: move the paintbrush around
 - <kbd>Ctrl</kbd> + arrow keys: move the paintbrush _faster!_
