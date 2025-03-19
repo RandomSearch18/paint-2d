@@ -8,7 +8,7 @@ We tested an in-development version of v0.2.0 (commit 8cccffbb286eeaf8748dff8199
 
 ### General notes
 
-THis was the first test on a native Windows machine, and it opened successfully. There were two issues that weren't experienced when testing in Linux:
+This was the first time testing the program on a native Windows machine, and it opened successfully. There were two issues that weren't experienced when testing in Linux:
 
 - The screen took a while to refresh whenever the cursor was moved, so the experience was a bit janky
 - The cursor moved on key up and on key down, which meant that the cursor moved twice for each key press
