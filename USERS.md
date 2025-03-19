@@ -49,3 +49,9 @@ However, all the users adapted very well to those quirks, and still managed to e
 James ran the v0.1.0 (the latest release version at the time) on Windows 10 and Linux. He noted that it was much smoother on Linux than on Windows (as we had found [earlier](#general-notes)).
 
 ![Screenshot of the art James made](images/Art_made_by_James.jpg)
+
+## Karolina running v0.2.0
+
+We tested version 0.2.0 before publishing it on my development PC running Arch Linux with the Kitty terminal emulator.
+
+![Screenshot of the art created by Karolina](images/Art_made_by_Karolina.png)
