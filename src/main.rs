@@ -84,6 +84,7 @@ struct Paint2D {
     /// `(height, width)` i.e. (cols, rows)
     terminal_size: (u16, u16),
     color_canvas: Vec<Vec<Option<Color>>>,
+    space_button_held: bool,
 }
 
 const BOTTOM_BAR_HEIGHT: u16 = 2;
@@ -121,6 +122,7 @@ impl Paint2D {
             cursor: PaintCursor::new(0, 1, canvas_size),
             terminal_size: terminal_size.clone(),
             color_canvas: vec![vec![None; canvas_size.0.into()]; canvas_size.1.into()],
+            space_button_held: false,
         }
     }
 
@@ -240,13 +242,38 @@ impl Paint2D {
         Ok(())
     }
 
+    fn on_cursor_move(&mut self) -> std::io::Result<()> {
+        // If Space is being held, then immediately splat some paint down
+        if self.space_button_held {
+            let row = self.cursor.col as usize;
+            let col = self.cursor.row as usize;
+            self.color_canvas[col][row] = Some(self.cursor.color);
+        }
+        self.redraw_screen()?;
+        Ok(())
+    }
+
     fn run(&mut self) -> std::io::Result<()> {
         self.redraw_screen()?;
         while self.running.load(Ordering::SeqCst) {
             while event::poll(Duration::from_millis(50))? {
                 match event::read()? {
                     Event::Key(key) => {
-                        if key.kind == KeyEventKind::Release {
+                        // Keep track of if the space button is being held or not
+                        if key.code == event::KeyCode::Char(' ') {
+                            match key.kind {
+                                KeyEventKind::Press => {
+                                    self.space_button_held = true;
+                                }
+                                KeyEventKind::Release => {
+                                    self.space_button_held = false;
+                                }
+                                KeyEventKind::Repeat => {}
+                            }
+                        }
+
+                        // Only perform actions on key down (not key up)
+                        if key.kind != KeyEventKind::Press {
                             continue;
                         }
 
@@ -279,19 +306,19 @@ impl Paint2D {
                             }
                             event::KeyCode::Left => {
                                 self.cursor.left(horizontal_movement);
-                                self.redraw_screen()?;
+                                self.on_cursor_move()?;
                             }
                             event::KeyCode::Right => {
                                 self.cursor.right(horizontal_movement);
-                                self.redraw_screen()?;
+                                self.on_cursor_move()?;
                             }
                             event::KeyCode::Up => {
                                 self.cursor.up(vertical_movement);
-                                self.redraw_screen()?;
+                                self.on_cursor_move()?;
                             }
                             event::KeyCode::Down => {
                                 self.cursor.down(vertical_movement);
-                                self.redraw_screen()?;
+                                self.on_cursor_move()?;
                             }
                             event::KeyCode::Char(' ') => {
                                 let row = self.cursor.col as usize;
