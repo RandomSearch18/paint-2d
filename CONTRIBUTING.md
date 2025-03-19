@@ -8,7 +8,7 @@ We use [`cross`](https://github.com/cross-rs/cross) to build the app for differe
 cross build --release --target aarch64-unknown-linux-gnu
 ```
 
-Building for macOS targets requires some [additional steps](https://github.com/cross-rs/cross-toolchains#apple-targets) to be followed (blame Apple licences).
+Building for macOS targets requires some [convoluted steps](https://github.com/cross-rs/cross-toolchains#apple-targets) to be followed if you're not using a macOS device (blame Apple licences).
 
 ## Tested terminals
 
