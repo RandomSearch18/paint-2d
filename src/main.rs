@@ -87,7 +87,7 @@ struct Paint2D {
     color_canvas: Vec<Vec<Option<Color>>>,
 }
 
-const BOTTOM_BAR_HEIGHT: u16 = 1;
+const BOTTOM_BAR_HEIGHT: u16 = 2;
 
 static COLOUR_KEYS: phf::Map<char, Color> = phf_map! {
     '1' => Color::White,
