@@ -194,7 +194,7 @@ impl Paint2D {
 
             if self.cursor.color == *color {
                 self.stdout.execute(SetBackgroundColor(display_color))?;
-                self.stdout.execute(SetForegroundColor(display_color))?;
+                self.stdout.execute(SetForegroundColor(Color::Black))?;
                 write!(self.stdout, "{} {}", key, name)?;
                 self.stdout.execute(ResetColor)?;
             } else {
