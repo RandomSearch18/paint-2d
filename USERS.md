@@ -42,9 +42,9 @@ However, all the users adapted very well to those quirks, and still managed to e
 
 ### User 6
 
-Images coming soon
+![User 6 using the program on a school computer](2025-03-19-12-14-41-599.jpg)
 
-## James running v0.1.0
+## James (user 7) running v0.1.0
 
 James ran the v0.1.0 (the latest release version at the time) on Windows 10 and Linux. He noted that it was much smoother on Linux than on Windows (as we had found [earlier](#general-notes)).
 
