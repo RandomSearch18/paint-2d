@@ -14,7 +14,6 @@ use crossterm::{
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal::{self, Clear, ClearType},
 };
-use phf::phf_map;
 
 struct PaintCursor {
     row: u16,
@@ -89,16 +88,28 @@ struct Paint2D {
 
 const BOTTOM_BAR_HEIGHT: u16 = 2;
 
-static COLOUR_KEYS: phf::Map<char, Color> = phf_map! {
-    '1' => Color::White,
-    '2' => Color::Red,
-    '3' => Color::Green,
-    '4' => Color::Yellow,
-    '5' => Color::Blue,
-    '6' => Color::Magenta,
-    '7' => Color::Cyan,
-    '8' => Color::Grey,
-};
+struct ColorKey {
+    key: char,
+    name: &'static str,
+    color: Color,
+}
+
+impl ColorKey {
+    const fn new(key: char, color: Color, name: &'static str) -> Self {
+        ColorKey { key, color, name }
+    }
+}
+
+static COLOUR_KEYS: [ColorKey; 8] = [
+    ColorKey::new('1', Color::White, "White"),
+    ColorKey::new('2', Color::Red, "Red"),
+    ColorKey::new('3', Color::Green, "Green"),
+    ColorKey::new('4', Color::Yellow, "Yellow"),
+    ColorKey::new('5', Color::Blue, "Blue"),
+    ColorKey::new('6', Color::Magenta, "Magenta"),
+    ColorKey::new('7', Color::Cyan, "Cyan"),
+    ColorKey::new('8', Color::Grey, "Grey"),
+];
 
 impl Paint2D {
     fn new(terminal_size: &(u16, u16)) -> Self {
@@ -174,9 +185,9 @@ impl Paint2D {
 
     fn draw_colors_bar(&mut self) -> std::io::Result<()> {
         self.stdout.execute(MoveTo(0, self.terminal_size.1 - 2))?;
-        for (key, color) in COLOUR_KEYS.entries() {
+        for ColorKey { key, name, color } in COLOUR_KEYS.iter() {
             self.stdout.execute(SetForegroundColor(*color))?;
-            write!(self.stdout, "{}", key)?;
+            write!(self.stdout, "{}", name)?;
             self.stdout.execute(ResetColor)?;
         }
         Ok(())
