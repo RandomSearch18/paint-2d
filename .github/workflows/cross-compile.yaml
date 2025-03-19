@@ -23,7 +23,7 @@ jobs:
             target: x86_64-pc-windows-gnu
           - os-name: Windows x86 (32-bit)
             runs-on: windows-latest
-            target: i686-pc-windows-gnu
+            target: i686-pc-windows-msvc
           - os-name: Windows aarch64
             runs-on: windows-latest
             target: aarch64-pc-windows-msvc
