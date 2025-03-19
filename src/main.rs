@@ -87,6 +87,8 @@ struct Paint2D {
     color_canvas: Vec<Vec<Option<Color>>>,
 }
 
+const BOTTOM_BAR_HEIGHT: u16 = 1;
+
 impl Paint2D {
     fn new(terminal_size: &(u16, u16)) -> Self {
         let canvas_size = (terminal_size.0, terminal_size.1 - 1);
@@ -261,8 +263,19 @@ impl Paint2D {
                         }
                     }
                     Event::Resize(cols, rows) => {
+                        let new_canvas_size = (cols, rows - BOTTOM_BAR_HEIGHT);
+                        // Ensure the cursor stays within the new canvas
+                        if self.cursor.row >= new_canvas_size.1 {
+                            self.cursor.row = new_canvas_size.1 - 1;
+                        }
+                        if self.cursor.col >= new_canvas_size.0 {
+                            self.cursor.col = new_canvas_size.0 - 1;
+                        }
+
+                        // Update the attributes & redraw screen
                         self.terminal_size = (cols, rows);
                         self.cursor.set_canvas_size(&(cols, rows - 1));
+                        self.redraw_screen()?;
                     }
                     _ => {}
                 }
