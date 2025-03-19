@@ -186,9 +186,17 @@ impl Paint2D {
     fn draw_colors_bar(&mut self) -> std::io::Result<()> {
         self.stdout.execute(MoveTo(0, self.terminal_size.1 - 2))?;
         for ColorKey { key, name, color } in COLOUR_KEYS.iter() {
-            self.stdout.execute(SetForegroundColor(*color))?;
-            write!(self.stdout, "{}", name)?;
-            self.stdout.execute(ResetColor)?;
+            if self.cursor.color == *color {
+                self.stdout.execute(SetBackgroundColor(*color))?;
+                self.stdout.execute(SetForegroundColor(*color))?;
+                write!(self.stdout, "{} {}", key, name)?;
+                self.stdout.execute(ResetColor)?;
+            } else {
+                self.stdout.execute(SetForegroundColor(*color))?;
+                write!(self.stdout, "{} {}", key, name)?;
+                self.stdout.execute(ResetColor)?;
+            }
+            self.stdout.execute(Print(" "))?;
         }
         Ok(())
     }
