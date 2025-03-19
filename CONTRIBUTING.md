@@ -12,7 +12,7 @@ Building for macOS targets requires some [additional steps](https://github.com/c
 
 ## Tested terminals
 
-Here's a list of terminals that Paint 2D has been tested in. Please test the app on your own platforms and favourite terminals so that the results can be added to the list, and any comparability issues fixed!
+Here's a list of terminals that Paint 2D has been tested in. Please test the app on your own platforms and favourite terminals so that the results can be added to the list, and any compatibility issues fixed!
 
 ### Linux
 
@@ -20,6 +20,7 @@ Here's a list of terminals that Paint 2D has been tested in. Please test the app
   - Subjectively looks the nicest in this one
 - ✅ Konsole
 - ✅ Visual Studio Code integrated terminal
+- ✅ Kitty
 
 ### Windows
 

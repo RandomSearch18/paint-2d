@@ -2,6 +2,8 @@
 
 Various people have used Paint 2D, including some beta testers who have provided me feedback and found bugs. This document contains some evidence to show that a number of users have used the project.
 
+If you'd like to be added to the list, feel free to submit a PR that adds a section for you. You can mention your OS, terminal, and any notes, and a screenshot would be great too!
+
 ## Beta test for v0.2.0 on Windows
 
 We tested an in-development version of v0.2.0 (commit 8cccffbb286eeaf8748dff819900b56e87bf9cc0) on a PC running Windows 10 22H2 (19045.5487). We ran the EXE file directly by double-clicking it.
