@@ -162,7 +162,7 @@ impl Paint2D {
             if let Some(color) = color {
                 self.stdout.execute(SetBackgroundColor(color))?;
                 self.stdout.execute(Print(char))?;
-                self.stdout.execute(ResetColor)?;
+                self.stdout.execute(SetBackgroundColor(Color::Reset))?;
             } else {
                 self.stdout.execute(Print(char))?;
             }
