@@ -1,6 +1,6 @@
 # Users of Paint 2D
 
-A number of people have used Paint 2D, including some beta testers who have provided me feedback and found bugs. This document contains some evidence to show that a number of users have used the project.
+Various people have used Paint 2D, including some beta testers who have provided me feedback and found bugs. This document contains some evidence to show that a number of users have used the project.
 
 ## Beta test for v0.2.0 on Windows
 
