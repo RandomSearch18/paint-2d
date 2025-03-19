@@ -50,7 +50,7 @@ James ran the v0.1.0 (the latest release version at the time) on Windows 10 and 
 
 ![Screenshot of the art James made](images/Art_made_by_James.jpg)
 
-## Karolina running v0.2.0
+## Karolina (user 8) running v0.2.0
 
 We tested version 0.2.0 before publishing it on my development PC running Arch Linux with the Kitty terminal emulator.
 
