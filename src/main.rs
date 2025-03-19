@@ -101,7 +101,6 @@ impl ColorKey {
 }
 
 static COLOUR_KEYS: [ColorKey; 9] = [
-    ColorKey::new('0', Color::Reset, "Eraser"),
     ColorKey::new('1', Color::White, "White"),
     ColorKey::new('2', Color::Red, "Red"),
     ColorKey::new('3', Color::Green, "Green"),
@@ -110,6 +109,7 @@ static COLOUR_KEYS: [ColorKey; 9] = [
     ColorKey::new('6', Color::Magenta, "Magenta"),
     ColorKey::new('7', Color::Cyan, "Cyan"),
     ColorKey::new('8', Color::Grey, "Grey"),
+    ColorKey::new('0', Color::Reset, "Eraser"),
 ];
 
 impl Paint2D {
@@ -187,13 +187,18 @@ impl Paint2D {
     fn draw_colors_bar(&mut self) -> std::io::Result<()> {
         self.stdout.execute(MoveTo(0, self.terminal_size.1 - 2))?;
         for ColorKey { key, name, color } in COLOUR_KEYS.iter() {
+            let display_color = match color {
+                Color::Reset => Color::White,
+                _ => *color,
+            };
+
             if self.cursor.color == *color {
-                self.stdout.execute(SetBackgroundColor(*color))?;
-                self.stdout.execute(SetForegroundColor(*color))?;
+                self.stdout.execute(SetBackgroundColor(display_color))?;
+                self.stdout.execute(SetForegroundColor(display_color))?;
                 write!(self.stdout, "{} {}", key, name)?;
                 self.stdout.execute(ResetColor)?;
             } else {
-                self.stdout.execute(SetForegroundColor(*color))?;
+                self.stdout.execute(SetForegroundColor(display_color))?;
                 write!(self.stdout, "{} {}", key, name)?;
                 self.stdout.execute(ResetColor)?;
             }
