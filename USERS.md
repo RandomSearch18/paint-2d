@@ -40,4 +40,12 @@ However, all the users adapted very well to those quirks, and still managed to e
 ![2025-03-19-11-52-07-666](https://github.com/user-attachments/assets/2cac8a2d-a8bf-4674-bccd-1fdaaf90e783)
 ![Screenshot of the created drawing](https://github.com/user-attachments/assets/8a735f88-11b1-41b1-b264-210f53ada8a8)
 
+### User 6
 
+Images coming soon
+
+## James running v0.1.0
+
+James ran the v0.1.0 (the latest release version at the time) on Windows 10 and Linux. He noted that it was much smoother on Linux than on Windows (as we had found [earlier](#general-notes)).
+
+![Screenshot of the art James made](images/Art_made_by_James.jpeg)
