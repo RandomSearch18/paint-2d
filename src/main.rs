@@ -10,7 +10,7 @@ use std::{
 use crossterm::{
     ExecutableCommand,
     cursor::{self, MoveTo},
-    event::{self, Event},
+    event::{self, Event, KeyEventKind},
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal::{self, Clear, ClearType},
 };
@@ -127,6 +127,9 @@ impl Paint2D {
     fn setup(&mut self) -> std::io::Result<()> {
         terminal::enable_raw_mode()?;
         self.stdout.execute(terminal::EnterAlternateScreen)?;
+        self.stdout.execute(event::PushKeyboardEnhancementFlags(
+            event::KeyboardEnhancementFlags::REPORT_EVENT_TYPES,
+        ))?;
         // Hide the cursor as much as we can
         self.stdout
             .execute(cursor::SetCursorStyle::SteadyUnderScore)?;
@@ -243,6 +246,10 @@ impl Paint2D {
             while event::poll(Duration::from_millis(50))? {
                 match event::read()? {
                     Event::Key(key) => {
+                        if key.kind == KeyEventKind::Release {
+                            continue;
+                        }
+
                         let is_speedy = key.modifiers.contains(event::KeyModifiers::CONTROL);
                         let is_super_speedy =
                             is_speedy && key.modifiers.contains(event::KeyModifiers::ALT);
@@ -332,6 +339,7 @@ impl Drop for Paint2D {
     fn drop(&mut self) {
         let _ = terminal::disable_raw_mode();
         let _ = self.stdout.execute(cursor::Show);
+        let _ = self.stdout.execute(event::PopKeyboardEnhancementFlags);
         let _ = self.stdout.execute(terminal::LeaveAlternateScreen);
         let _ = self
             .stdout
