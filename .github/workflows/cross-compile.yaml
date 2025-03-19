@@ -52,7 +52,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Paint_2D_v${{ env.VERSION }}$_{{ matrix.platform.os-name }}
+          name: Paint_2D_v${{ env.VERSION }}_${{ matrix.platform.os-name }}
           # Include paint-2d or paint-2d.exe, but not paint-2d.d
           path: |
             ./target/${{ matrix.platform.target }}/release/paint-2d*
