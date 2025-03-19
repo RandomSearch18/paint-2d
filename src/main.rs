@@ -287,18 +287,13 @@ impl Paint2D {
                                 self.redraw_screen()?;
                             }
                             event::KeyCode::Char(char) => {
-                                self.cursor.color = match char {
-                                    '1' => Color::White,
-                                    '2' => Color::Red,
-                                    '3' => Color::Green,
-                                    '4' => Color::Yellow,
-                                    '5' => Color::Blue,
-                                    '6' => Color::Magenta,
-                                    '7' => Color::Cyan,
-                                    '8' => Color::Grey,
-                                    _ => self.cursor.color,
-                                };
-                                self.redraw_screen()?;
+                                for ColorKey { key, color, .. } in COLOUR_KEYS.iter() {
+                                    if char == *key {
+                                        self.cursor.color = *color;
+                                        self.redraw_screen()?;
+                                        break;
+                                    }
+                                }
                             }
                             _ => {}
                         }
