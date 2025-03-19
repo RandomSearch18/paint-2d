@@ -11,7 +11,6 @@ use crossterm::{
     ExecutableCommand,
     cursor::{self, MoveTo},
     event::{self, Event},
-    execute,
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal::{self, Clear, ClearType},
 };
@@ -91,7 +90,7 @@ const BOTTOM_BAR_HEIGHT: u16 = 1;
 
 impl Paint2D {
     fn new(terminal_size: &(u16, u16)) -> Self {
-        let canvas_size = (terminal_size.0, terminal_size.1 - 1);
+        let canvas_size = (terminal_size.0, terminal_size.1 - BOTTOM_BAR_HEIGHT);
         Paint2D {
             stdout: std::io::stdout(),
             running: Arc::new(AtomicBool::new(true)),
