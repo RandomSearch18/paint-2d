@@ -14,6 +14,7 @@ use crossterm::{
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal::{self, Clear, ClearType},
 };
+use phf::phf_map;
 
 struct PaintCursor {
     row: u16,
@@ -88,6 +89,17 @@ struct Paint2D {
 
 const BOTTOM_BAR_HEIGHT: u16 = 1;
 
+static COLOUR_KEYS: phf::Map<char, Color> = phf_map! {
+    '1' => Color::White,
+    '2' => Color::Red,
+    '3' => Color::Green,
+    '4' => Color::Yellow,
+    '5' => Color::Blue,
+    '6' => Color::Magenta,
+    '7' => Color::Cyan,
+    '8' => Color::Grey,
+};
+
 impl Paint2D {
     fn new(terminal_size: &(u16, u16)) -> Self {
         let canvas_size = (terminal_size.0, terminal_size.1 - BOTTOM_BAR_HEIGHT);
@@ -160,6 +172,16 @@ impl Paint2D {
         Ok(())
     }
 
+    fn draw_colors_bar(&mut self) -> std::io::Result<()> {
+        self.stdout.execute(MoveTo(0, self.terminal_size.1 - 2))?;
+        for (key, color) in COLOUR_KEYS.entries() {
+            self.stdout.execute(SetForegroundColor(*color))?;
+            write!(self.stdout, "{}", key)?;
+            self.stdout.execute(ResetColor)?;
+        }
+        Ok(())
+    }
+
     fn redraw_screen(&mut self) -> std::io::Result<()> {
         self.stdout.execute(Clear(ClearType::All))?;
         self.stdout.execute(cursor::MoveTo(0, 0))?;
@@ -185,6 +207,7 @@ impl Paint2D {
             }
         }
         self.draw_cursor()?;
+        self.draw_colors_bar()?;
         self.draw_bottom_bar()?;
         Ok(())
     }
