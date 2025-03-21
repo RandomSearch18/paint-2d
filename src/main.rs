@@ -78,6 +78,20 @@ impl PaintCursor {
     }
 }
 
+fn make_dark(color: Color) -> Color {
+    match color {
+        Color::White => Color::Grey,
+        Color::Red => Color::DarkRed,
+        Color::Green => Color::DarkGreen,
+        Color::Yellow => Color::DarkYellow,
+        Color::Blue => Color::DarkBlue,
+        Color::Magenta => Color::DarkMagenta,
+        Color::Cyan => Color::DarkCyan,
+        Color::Grey => Color::Black,
+        _ => color,
+    }
+}
+
 /// All the state and main methods for the TUI program
 struct Paint2D {
     stdout: std::io::Stdout,
@@ -146,7 +160,6 @@ impl Paint2D {
     fn draw_cursor(&mut self) -> std::io::Result<()> {
         const CHARS: [char; 3] = ['┣', 'ˣ', '┫'];
         let offset: u32 = (CHARS.len() / 2).try_into().unwrap();
-        self.stdout.execute(SetForegroundColor(self.cursor.color))?;
         for (i, char) in CHARS.iter().enumerate() {
             // The next few lines are pure Rust pain
             // I just want to subtract two numbers and get a negative number >:(
@@ -170,10 +183,14 @@ impl Paint2D {
             self.stdout.execute(MoveTo(current_col, self.cursor.row))?;
             if let Some(color) = color {
                 self.stdout.execute(SetBackgroundColor(color))?;
+                self.stdout.execute(SetForegroundColor(make_dark(color)))?;
                 self.stdout.execute(Print(char))?;
                 self.stdout.execute(SetBackgroundColor(Color::Reset))?;
+                self.stdout.execute(SetForegroundColor(Color::Reset))?;
             } else {
+                self.stdout.execute(SetForegroundColor(self.cursor.color))?;
                 self.stdout.execute(Print(char))?;
+                self.stdout.execute(SetForegroundColor(Color::Reset))?;
             }
         }
         self.stdout.execute(SetForegroundColor(Color::White))?;
