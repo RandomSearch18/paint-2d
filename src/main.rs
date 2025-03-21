@@ -7,6 +7,7 @@ use std::{
     time::Duration,
 };
 
+use chrono::Local;
 use crossterm::{
     ExecutableCommand,
     cursor::{self, MoveTo},
@@ -255,7 +256,7 @@ impl Paint2D {
         Ok(())
     }
 
-    fn export_canvas_to_image(&self) -> std::io::Result<()> {
+    fn export_canvas_to_image(&self) {
         // Block widths and heights based on Kitty with default settings
         const BLOCK_WIDTH: u16 = 9;
         const BLOCK_HEIGHT: u16 = 20;
@@ -290,7 +291,17 @@ impl Paint2D {
                 }
             }
         }
-        Ok(())
+        // Save the image to a file
+        let time = Local::now().format("%Y-%m-%d %H_%M_%S");
+        let filename = format!("Paint 2D at {}.png", time);
+        match image.save(&filename) {
+            Ok(_) => {
+                print!(" Exported canvas to {}", filename);
+            }
+            Err(_) => {
+                print!(" Error exporting canvas to {}", filename);
+            }
+        }
     }
 
     fn run(&mut self) -> std::io::Result<()> {
@@ -365,6 +376,9 @@ impl Paint2D {
                                 let col = self.cursor.row as usize;
                                 self.color_canvas[col][row] = Some(self.cursor.color);
                                 self.redraw_screen()?;
+                            }
+                            event::KeyCode::Char('e') => {
+                                self.export_canvas_to_image();
                             }
                             event::KeyCode::Char(char) => {
                                 for ColorKey { key, color, .. } in COLOUR_KEYS.iter() {
