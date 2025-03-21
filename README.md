@@ -21,6 +21,7 @@ You will see an indicator for where your paintbrush is in the top-left corner. T
 - <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + arrow keys: move the paintbrush ⚡ _even faster!_ ⚡
 - <kbd>Space</kbd>: paint a single pixel
 - Number keys: change the colour of your paintbrush (available colours are shown at the bottom)
+- <kbd>E</kbd>: export your creation as a PNG file (saved to the current directory)
 - <kbd>Q</kbd>: quit the program (<kbd>Ctrl</kbd>+<kbd>C</kbd> can also be used)
 
 ## See also
