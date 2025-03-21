@@ -99,9 +99,11 @@ struct Paint2D {
     cursor: PaintCursor,
     /// `(height, width)` i.e. (cols, rows)
     terminal_size: (u16, u16),
-    // A vec of rows. Can be accessed like `color_canvas[row][col]`
+    /// A vec of rows. Can be accessed like `color_canvas[row][col]`
     color_canvas: Vec<Vec<Option<Color>>>,
     space_button_held: bool,
+    /// True if the terminal sends key release events (as well as normal key down events)
+    enhanced_key_events: bool,
 }
 
 const BOTTOM_BAR_HEIGHT: u16 = 2;
@@ -140,6 +142,8 @@ impl Paint2D {
             terminal_size: terminal_size.clone(),
             color_canvas: vec![vec![None; canvas_size.0.into()]; canvas_size.1.into()],
             space_button_held: false,
+            // True if the terminal sends key release events (as well as normal key down events)
+            enhanced_key_events: false,
         }
     }
 
@@ -327,8 +331,14 @@ impl Paint2D {
             while event::poll(Duration::from_millis(50))? {
                 match event::read()? {
                     Event::Key(key) => {
+                        // We need to know if we receive key release events or not
+                        // This is a hacky way of working that out
+                        if key.kind != KeyEventKind::Press {
+                            self.enhanced_key_events = true;
+                        }
+
                         // Keep track of if the space button is being held or not
-                        if key.code == event::KeyCode::Char(' ') {
+                        if key.code == event::KeyCode::Char(' ') && self.enhanced_key_events {
                             match key.kind {
                                 KeyEventKind::Press => {
                                     self.space_button_held = true;
