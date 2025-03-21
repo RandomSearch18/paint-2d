@@ -14,6 +14,7 @@ use crossterm::{
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal::{self, Clear, ClearType},
 };
+use image::ImageBuffer;
 
 struct PaintCursor {
     row: u16,
@@ -253,6 +254,10 @@ impl Paint2D {
         Ok(())
     }
 
+    // fn export_canvas_to_image(&self) -> std::io::Result<()> {
+    //     let mut image = ImageBuffer
+    // }
+
     fn run(&mut self) -> std::io::Result<()> {
         self.redraw_screen()?;
         while self.running.load(Ordering::SeqCst) {
@@ -272,8 +277,8 @@ impl Paint2D {
                             }
                         }
 
-                        // Only perform actions on key down (not key up)
-                        if key.kind != KeyEventKind::Press {
+                        // Prevents actions happening twice per key press
+                        if key.kind == KeyEventKind::Release {
                             continue;
                         }
 
