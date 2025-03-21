@@ -14,7 +14,7 @@ use crossterm::{
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal::{self, Clear, ClearType},
 };
-use image::ImageBuffer;
+use image::{ImageBuffer, Rgb, RgbImage};
 
 struct PaintCursor {
     row: u16,
@@ -84,6 +84,7 @@ struct Paint2D {
     cursor: PaintCursor,
     /// `(height, width)` i.e. (cols, rows)
     terminal_size: (u16, u16),
+    // A vec of rows. Can be accessed like `color_canvas[row][col]`
     color_canvas: Vec<Vec<Option<Color>>>,
     space_button_held: bool,
 }
@@ -254,9 +255,43 @@ impl Paint2D {
         Ok(())
     }
 
-    // fn export_canvas_to_image(&self) -> std::io::Result<()> {
-    //     let mut image = ImageBuffer
-    // }
+    fn export_canvas_to_image(&self) -> std::io::Result<()> {
+        // Block widths and heights based on Kitty with default settings
+        const BLOCK_WIDTH: u16 = 9;
+        const BLOCK_HEIGHT: u16 = 20;
+        let image_width = self.cursor.canvas_cols * BLOCK_WIDTH;
+        let image_height = self.cursor.canvas_rows * BLOCK_HEIGHT;
+        let mut image = RgbImage::new(image_width.into(), image_height.into());
+        for row in 0..self.cursor.canvas_rows {
+            for col in 0..self.cursor.canvas_cols {
+                // Named color colors are based on the default Kitty colors
+                let rgb = match self.color_canvas[row as usize][col as usize] {
+                    Some(Color::Reset) => Rgb([0, 0, 0]),
+                    Some(Color::White) => Rgb([255, 255, 255]),
+                    Some(Color::Red) => Rgb([242, 31, 30]),
+                    Some(Color::Green) => Rgb([34, 253, 0]),
+                    Some(Color::Yellow) => Rgb([254, 253, 0]),
+                    Some(Color::Blue) => Rgb([25, 143, 255]),
+                    Some(Color::Magenta) => Rgb([253, 39, 255]),
+                    Some(Color::Cyan) => Rgb([19, 255, 254]),
+                    Some(Color::Grey) => Rgb([221, 221, 221]),
+                    Some(Color::Rgb { r, g, b }) => Rgb([r, g, b]),
+                    None => Rgb([0, 0, 0]),
+                    _ => Rgb([0, 0, 0]), // Any other colours aren't supported by the program, so we draw them black
+                };
+                // Draw the block to the image buffer!
+                // I feel like there should be a more efficient way to do this (without iterating)
+                let start_x = col * BLOCK_WIDTH;
+                let start_y = row * BLOCK_HEIGHT;
+                for y in 0..BLOCK_HEIGHT {
+                    for x in 0..BLOCK_WIDTH {
+                        image.put_pixel((start_x + x).into(), (start_y + y).into(), rgb);
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
 
     fn run(&mut self) -> std::io::Result<()> {
         self.redraw_screen()?;
