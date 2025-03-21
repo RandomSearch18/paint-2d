@@ -15,7 +15,7 @@ use crossterm::{
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal::{self, Clear, ClearType},
 };
-use image::{ImageBuffer, Rgb, RgbImage};
+use image::{Rgb, RgbImage};
 
 struct PaintCursor {
     row: u16,
@@ -186,7 +186,7 @@ impl Paint2D {
         self.stdout.execute(SetBackgroundColor(Color::White))?;
         write!(
             self.stdout,
-            "Arrow keys: move, Space: paint, Number keys: change color, q: quit"
+            "Arrow keys: move, Space: paint, Number keys: change color, E: export, Q: quit"
         )?;
         self.stdout.execute(ResetColor)?;
         Ok(())
@@ -296,7 +296,7 @@ impl Paint2D {
         let filename = format!("Paint 2D at {}.png", time);
         match image.save(&filename) {
             Ok(_) => {
-                print!(" Exported canvas to {}", filename);
+                print!(" Exported canvas to \"{}\"", filename);
             }
             Err(_) => {
                 print!(" Error exporting canvas to {}", filename);
