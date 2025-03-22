@@ -18,6 +18,9 @@ jobs:
           - os-name: Linux_aarch64
             runs-on: ubuntu-24.04
             target: aarch64-unknown-linux-gnu
+          - os-name: Linux_i686
+            runs-on: ubuntu-24.04
+            target: i686-unknown-linux-gnu
           - os-name: Windows_x86_64
             runs-on: windows-latest
             target: x86_64-pc-windows-gnu
@@ -27,6 +30,9 @@ jobs:
           - os-name: Windows_aarch64
             runs-on: windows-latest
             target: aarch64-pc-windows-msvc
+          - os-name: Android_aarch64
+            runs-on: ubuntu-24.04
+            target: aarch64-linux-android
           - os-name: macOS_x86_64
             runs-on: macOS-latest
             target: x86_64-apple-darwin
@@ -40,6 +46,12 @@ jobs:
       - name: Extract version number
         shell: bash
         run: echo "VERSION=$(grep -m 1 '^version' Cargo.toml | cut -d '"' -f 2)" >> $GITHUB_ENV
+      - name: Install Cross
+        shell: bash
+        # Use the git `main` branch because it has functional support for Android builds
+        # See https://github.com/cross-rs/cross/issues/1222#issuecomment-1950869024
+        if: contains(matrix.platform.os-name, 'android')
+        run: cargo install cross --git https://github.com/cross-rs/cross
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v1
         with:
