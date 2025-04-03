@@ -11,7 +11,7 @@ use chrono::Local;
 use crossterm::{
     ExecutableCommand,
     cursor::{self, MoveTo},
-    event::{self, Event, KeyEventKind},
+    event::{self, Event, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal::{self, Clear, ClearType},
 };
@@ -150,6 +150,7 @@ impl Paint2D {
     fn setup(&mut self) -> std::io::Result<()> {
         terminal::enable_raw_mode()?;
         self.stdout.execute(terminal::EnterAlternateScreen)?;
+        self.stdout.execute(event::EnableMouseCapture)?;
         self.stdout.execute(event::PushKeyboardEnhancementFlags(
             event::KeyboardEnhancementFlags::REPORT_EVENT_TYPES,
         ))?;
@@ -434,6 +435,18 @@ impl Paint2D {
                         self.cursor.set_canvas_size(&(cols, rows - 1));
                         self.redraw_screen()?;
                     }
+                    Event::Mouse(MouseEvent {
+                        kind, column, row, ..
+                    }) => {
+                        // Click to teleport the cursor
+                        if kind == MouseEventKind::Down(MouseButton::Left) {
+                            if row < self.cursor.canvas_rows && column < self.cursor.canvas_cols {
+                                self.cursor.col = column;
+                                self.cursor.row = row;
+                                self.redraw_screen()?;
+                            }
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -447,6 +460,7 @@ impl Drop for Paint2D {
     fn drop(&mut self) {
         let _ = terminal::disable_raw_mode();
         let _ = self.stdout.execute(cursor::Show);
+        let _ = self.stdout.execute(event::DisableMouseCapture);
         let _ = self.stdout.execute(event::PopKeyboardEnhancementFlags);
         let _ = self.stdout.execute(terminal::LeaveAlternateScreen);
         let _ = self
