@@ -107,9 +107,9 @@ struct Paint2D {
     /// True if the terminal sends key release events (as well as normal key down events)
     enhanced_key_events: bool,
     /// The row that the color bar occupies
-    colour_bar_row: u16,
+    color_bar_row: u16,
     /// Stores the columns occupied by each colour's label in the colour bar
-    colour_bar_color_labels: HashMap<Color, Range<u16>>,
+    color_bar_color_labels: HashMap<Color, Range<u16>>,
 }
 
 const BOTTOM_BAR_HEIGHT: u16 = 2;
@@ -128,7 +128,7 @@ impl ColorKey {
     }
 }
 
-static COLOUR_KEYS: [ColorKey; 9] = [
+static COLOR_KEYS: [ColorKey; 9] = [
     ColorKey::new('1', Color::White, "White"),
     ColorKey::new('2', Color::Red, "Red"),
     ColorKey::new('3', Color::Green, "Green"),
@@ -154,9 +154,9 @@ impl Paint2D {
             space_button_held: false,
             // True if the terminal sends key release events (as well as normal key down events)
             enhanced_key_events: false,
-            colour_bar_row: rows - COLOR_BAR_ROW_FROM_BOTTOM,
-            colour_bar_color_labels: HashMap::from_iter(
-                COLOUR_KEYS
+            color_bar_row: rows - COLOR_BAR_ROW_FROM_BOTTOM,
+            color_bar_color_labels: HashMap::from_iter(
+                COLOR_KEYS
                     .iter()
                     // We haven't drawn the color bar yet, so all colours take up 0 space
                     .map(|color_key| (color_key.color.clone(), 0..0)),
@@ -234,8 +234,8 @@ impl Paint2D {
     fn draw_colors_bar(&mut self) -> std::io::Result<()> {
         self.stdout
             .execute(MoveTo(0, self.terminal_size.1 - COLOR_BAR_ROW_FROM_BOTTOM))?;
-        self.colour_bar_color_labels.clear();
-        for ColorKey { key, name, color } in COLOUR_KEYS.iter() {
+        self.color_bar_color_labels.clear();
+        for ColorKey { key, name, color } in COLOR_KEYS.iter() {
             let display_color = match color {
                 Color::Reset => Color::White,
                 _ => *color,
@@ -255,7 +255,7 @@ impl Paint2D {
 
             // Update the colour_bar_color_labels hashmap
             let (final_cursor_col, _) = cursor::position()?;
-            self.colour_bar_color_labels
+            self.color_bar_color_labels
                 .insert(color.clone(), initial_cursor_col..final_cursor_col);
 
             self.stdout.execute(Print(" "))?;
@@ -435,7 +435,7 @@ impl Paint2D {
                                 self.export_canvas_to_image();
                             }
                             event::KeyCode::Char(char) => {
-                                for ColorKey { key, color, .. } in COLOUR_KEYS.iter() {
+                                for ColorKey { key, color, .. } in COLOR_KEYS.iter() {
                                     if char == *key {
                                         self.cursor.color = *color;
                                         self.redraw_screen()?;
@@ -459,7 +459,7 @@ impl Paint2D {
                         // Update the attributes & redraw screen
                         self.terminal_size = (cols, rows);
                         self.cursor.set_canvas_size(&(cols, rows - 1));
-                        self.colour_bar_row = rows - COLOR_BAR_ROW_FROM_BOTTOM;
+                        self.color_bar_row = rows - COLOR_BAR_ROW_FROM_BOTTOM;
                         self.redraw_screen()?;
                     }
                     Event::Mouse(MouseEvent {
@@ -471,9 +471,9 @@ impl Paint2D {
                                 self.cursor.col = column;
                                 self.cursor.row = row;
                                 self.redraw_screen()?;
-                            } else if row == self.colour_bar_row {
+                            } else if row == self.color_bar_row {
                                 // Click on a color to select it
-                                for (color, color_cols) in self.colour_bar_color_labels.iter() {
+                                for (color, color_cols) in self.color_bar_color_labels.iter() {
                                     if color_cols.contains(&column) {
                                         self.cursor.color = *color;
                                         self.redraw_screen()?;
