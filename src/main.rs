@@ -1,5 +1,7 @@
 use std::{
+    collections::HashMap,
     io::Write,
+    ops::Range,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -104,9 +106,15 @@ struct Paint2D {
     space_button_held: bool,
     /// True if the terminal sends key release events (as well as normal key down events)
     enhanced_key_events: bool,
+    /// The row that the color bar occupies
+    colour_bar_row: u16,
+    /// Stores the columns occupied by each colour's label in the colour bar
+    colour_bar_color_labels: HashMap<Color, Range<u16>>,
 }
 
 const BOTTOM_BAR_HEIGHT: u16 = 2;
+/// The number of rows from the bottom that the color bar should be rendered at
+const COLOR_BAR_ROW_FROM_BOTTOM: u16 = 2;
 
 struct ColorKey {
     key: char,
@@ -134,7 +142,9 @@ static COLOUR_KEYS: [ColorKey; 9] = [
 
 impl Paint2D {
     fn new(terminal_size: &(u16, u16)) -> Self {
-        let canvas_size = (terminal_size.0, terminal_size.1 - BOTTOM_BAR_HEIGHT);
+        let rows = terminal_size.1;
+        let cols = terminal_size.0;
+        let canvas_size = (cols, rows - BOTTOM_BAR_HEIGHT);
         Paint2D {
             stdout: std::io::stdout(),
             running: Arc::new(AtomicBool::new(true)),
@@ -144,6 +154,13 @@ impl Paint2D {
             space_button_held: false,
             // True if the terminal sends key release events (as well as normal key down events)
             enhanced_key_events: false,
+            colour_bar_row: rows - COLOR_BAR_ROW_FROM_BOTTOM,
+            colour_bar_color_labels: HashMap::from_iter(
+                COLOUR_KEYS
+                    .iter()
+                    // We haven't drawn the color bar yet, so all colours take up 0 space
+                    .map(|color_key| (color_key.color.clone(), 0..0)),
+            ),
         }
     }
 
@@ -215,13 +232,16 @@ impl Paint2D {
     }
 
     fn draw_colors_bar(&mut self) -> std::io::Result<()> {
-        self.stdout.execute(MoveTo(0, self.terminal_size.1 - 2))?;
+        self.stdout
+            .execute(MoveTo(0, self.terminal_size.1 - COLOR_BAR_ROW_FROM_BOTTOM))?;
+        self.colour_bar_color_labels.clear();
         for ColorKey { key, name, color } in COLOUR_KEYS.iter() {
             let display_color = match color {
                 Color::Reset => Color::White,
                 _ => *color,
             };
 
+            let (initial_cursor_col, _) = cursor::position()?;
             if self.cursor.color == *color {
                 self.stdout.execute(SetBackgroundColor(display_color))?;
                 self.stdout.execute(SetForegroundColor(Color::Black))?;
@@ -232,6 +252,12 @@ impl Paint2D {
                 write!(self.stdout, "{} {}", key, name)?;
                 self.stdout.execute(ResetColor)?;
             }
+
+            // Update the colour_bar_color_labels hashmap
+            let (final_cursor_col, _) = cursor::position()?;
+            self.colour_bar_color_labels
+                .insert(color.clone(), initial_cursor_col..final_cursor_col);
+
             self.stdout.execute(Print(" "))?;
         }
         Ok(())
@@ -433,6 +459,7 @@ impl Paint2D {
                         // Update the attributes & redraw screen
                         self.terminal_size = (cols, rows);
                         self.cursor.set_canvas_size(&(cols, rows - 1));
+                        self.colour_bar_row = rows - COLOR_BAR_ROW_FROM_BOTTOM;
                         self.redraw_screen()?;
                     }
                     Event::Mouse(MouseEvent {
@@ -444,6 +471,15 @@ impl Paint2D {
                                 self.cursor.col = column;
                                 self.cursor.row = row;
                                 self.redraw_screen()?;
+                            } else if row == self.colour_bar_row {
+                                // Click on a color to select it
+                                for (color, color_cols) in self.colour_bar_color_labels.iter() {
+                                    if color_cols.contains(&column) {
+                                        self.cursor.color = *color;
+                                        self.redraw_screen()?;
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
