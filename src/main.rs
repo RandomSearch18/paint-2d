@@ -1,5 +1,7 @@
 use std::{
+    collections::HashMap,
     io::Write,
+    ops::Range,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -11,7 +13,7 @@ use chrono::Local;
 use crossterm::{
     ExecutableCommand,
     cursor::{self, MoveTo},
-    event::{self, Event, KeyEventKind},
+    event::{self, Event, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal::{self, Clear, ClearType},
 };
@@ -104,9 +106,15 @@ struct Paint2D {
     space_button_held: bool,
     /// True if the terminal sends key release events (as well as normal key down events)
     enhanced_key_events: bool,
+    /// The row that the color bar occupies
+    color_bar_row: u16,
+    /// Stores the columns occupied by each colour's label in the colour bar
+    color_bar_color_labels: HashMap<Color, Range<u16>>,
 }
 
 const BOTTOM_BAR_HEIGHT: u16 = 2;
+/// The number of rows from the bottom that the color bar should be rendered at
+const COLOR_BAR_ROW_FROM_BOTTOM: u16 = 2;
 
 struct ColorKey {
     key: char,
@@ -120,7 +128,7 @@ impl ColorKey {
     }
 }
 
-static COLOUR_KEYS: [ColorKey; 9] = [
+static COLOR_KEYS: [ColorKey; 9] = [
     ColorKey::new('1', Color::White, "White"),
     ColorKey::new('2', Color::Red, "Red"),
     ColorKey::new('3', Color::Green, "Green"),
@@ -134,7 +142,9 @@ static COLOUR_KEYS: [ColorKey; 9] = [
 
 impl Paint2D {
     fn new(terminal_size: &(u16, u16)) -> Self {
-        let canvas_size = (terminal_size.0, terminal_size.1 - BOTTOM_BAR_HEIGHT);
+        let rows = terminal_size.1;
+        let cols = terminal_size.0;
+        let canvas_size = (cols, rows - BOTTOM_BAR_HEIGHT);
         Paint2D {
             stdout: std::io::stdout(),
             running: Arc::new(AtomicBool::new(true)),
@@ -144,12 +154,20 @@ impl Paint2D {
             space_button_held: false,
             // True if the terminal sends key release events (as well as normal key down events)
             enhanced_key_events: false,
+            color_bar_row: rows - COLOR_BAR_ROW_FROM_BOTTOM,
+            color_bar_color_labels: HashMap::from_iter(
+                COLOR_KEYS
+                    .iter()
+                    // We haven't drawn the color bar yet, so all colours take up 0 space
+                    .map(|color_key| (color_key.color.clone(), 0..0)),
+            ),
         }
     }
 
     fn setup(&mut self) -> std::io::Result<()> {
         terminal::enable_raw_mode()?;
         self.stdout.execute(terminal::EnterAlternateScreen)?;
+        self.stdout.execute(event::EnableMouseCapture)?;
         self.stdout.execute(event::PushKeyboardEnhancementFlags(
             event::KeyboardEnhancementFlags::REPORT_EVENT_TYPES,
         ))?;
@@ -214,13 +232,16 @@ impl Paint2D {
     }
 
     fn draw_colors_bar(&mut self) -> std::io::Result<()> {
-        self.stdout.execute(MoveTo(0, self.terminal_size.1 - 2))?;
-        for ColorKey { key, name, color } in COLOUR_KEYS.iter() {
+        self.stdout
+            .execute(MoveTo(0, self.terminal_size.1 - COLOR_BAR_ROW_FROM_BOTTOM))?;
+        self.color_bar_color_labels.clear();
+        for ColorKey { key, name, color } in COLOR_KEYS.iter() {
             let display_color = match color {
                 Color::Reset => Color::White,
                 _ => *color,
             };
 
+            let (initial_cursor_col, _) = cursor::position()?;
             if self.cursor.color == *color {
                 self.stdout.execute(SetBackgroundColor(display_color))?;
                 self.stdout.execute(SetForegroundColor(Color::Black))?;
@@ -231,6 +252,12 @@ impl Paint2D {
                 write!(self.stdout, "{} {}", key, name)?;
                 self.stdout.execute(ResetColor)?;
             }
+
+            // Update the colour_bar_color_labels hashmap
+            let (final_cursor_col, _) = cursor::position()?;
+            self.color_bar_color_labels
+                .insert(color.clone(), initial_cursor_col..final_cursor_col);
+
             self.stdout.execute(Print(" "))?;
         }
         Ok(())
@@ -408,7 +435,7 @@ impl Paint2D {
                                 self.export_canvas_to_image();
                             }
                             event::KeyCode::Char(char) => {
-                                for ColorKey { key, color, .. } in COLOUR_KEYS.iter() {
+                                for ColorKey { key, color, .. } in COLOR_KEYS.iter() {
                                     if char == *key {
                                         self.cursor.color = *color;
                                         self.redraw_screen()?;
@@ -432,7 +459,29 @@ impl Paint2D {
                         // Update the attributes & redraw screen
                         self.terminal_size = (cols, rows);
                         self.cursor.set_canvas_size(&(cols, rows - 1));
+                        self.color_bar_row = rows - COLOR_BAR_ROW_FROM_BOTTOM;
                         self.redraw_screen()?;
+                    }
+                    Event::Mouse(MouseEvent {
+                        kind, column, row, ..
+                    }) => {
+                        // Click to teleport the cursor
+                        if kind == MouseEventKind::Down(MouseButton::Left) {
+                            if row < self.cursor.canvas_rows && column < self.cursor.canvas_cols {
+                                self.cursor.col = column;
+                                self.cursor.row = row;
+                                self.redraw_screen()?;
+                            } else if row == self.color_bar_row {
+                                // Click on a color to select it
+                                for (color, color_cols) in self.color_bar_color_labels.iter() {
+                                    if color_cols.contains(&column) {
+                                        self.cursor.color = *color;
+                                        self.redraw_screen()?;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                     }
                     _ => {}
                 }
@@ -447,6 +496,7 @@ impl Drop for Paint2D {
     fn drop(&mut self) {
         let _ = terminal::disable_raw_mode();
         let _ = self.stdout.execute(cursor::Show);
+        let _ = self.stdout.execute(event::DisableMouseCapture);
         let _ = self.stdout.execute(event::PopKeyboardEnhancementFlags);
         let _ = self.stdout.execute(terminal::LeaveAlternateScreen);
         let _ = self
