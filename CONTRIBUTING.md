@@ -31,3 +31,13 @@ Here's a list of terminals that Paint 2D has been tested in. Please test the app
 ### macOS
 
 - ✅ macOS Terminal
+
+## Publishing a release
+
+1. Bump version in `Cargo.toml`
+2. Make sure `Cargo.lock` has updated with the new version number (done automatically if you use rust-analyzer)
+3. Commit the version bump to the `master` branch
+4. Wait for the GitHub Action to build all the binaries for the various platforms
+5. Download all the zip file artifacts from the GitHub Action
+6. Create a GitHub release, tell it to create a new tag (e.g. `v0.4.1`), upload the zip files to the assets/binaries section, write a little changelog, and publish it as the latest release
+7. ~~Profit?~~ (Disclaimer: There is no profit, just labour of love)
