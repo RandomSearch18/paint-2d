@@ -168,9 +168,9 @@ impl Paint2D {
         terminal::enable_raw_mode()?;
         self.stdout.execute(terminal::EnterAlternateScreen)?;
         self.stdout.execute(event::EnableMouseCapture)?;
-        self.stdout.execute(event::PushKeyboardEnhancementFlags(
+        let _ = self.stdout.execute(event::PushKeyboardEnhancementFlags(
             event::KeyboardEnhancementFlags::REPORT_EVENT_TYPES,
-        ))?;
+        ));
         // Hide the cursor as much as we can
         self.stdout
             .execute(cursor::SetCursorStyle::SteadyUnderScore)?;
